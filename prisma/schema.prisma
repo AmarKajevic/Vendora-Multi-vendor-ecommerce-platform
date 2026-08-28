@@ -1,0 +1,327 @@
+
+generator client {
+  provider = "prisma-client-js"
+  
+  
+}
+
+datasource db {
+  provider = "mongodb"
+  url       = env("DATABASE_URL")
+  
+}
+
+model userAvatar {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @unique @db.ObjectId
+  url     String
+  file_id String?
+
+  user users @relation(fields: [userId], references: [id])
+}
+model productImages {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  url       String
+  file_id   String?
+
+  product products @relation(fields: [productId], references: [id])
+}
+model shopImages {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  shopId String @db.ObjectId
+  url    String
+  file_id String?
+
+  shop shops @relation(fields: [shopId], references: [id])
+}
+model shopAvatar {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  shopId String @unique @db.ObjectId
+  url    String
+
+  shop shops @relation(fields: [shopId], references: [id])
+}
+enum Role {
+  user
+  seller
+  admin
+}
+
+model users {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  role  Role   @default(user)
+  email String @unique
+  password String?
+  following String[]
+  avatar userAvatar? 
+  userAnalytics userAnalytics?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shopReviews shopReviews[]
+  address address[]
+  orders    orders[]
+}
+
+model shopReviews {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @db.ObjectId
+  user users @relation(fields: [userId], references: [id])
+  rating Float
+  reviews String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shopsId String? @db.ObjectId
+  shops shops? @relation(fields: [shopsId], references: [id])
+}
+
+model shops {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  bio String?
+  category String
+  avatar shopAvatar?
+  images shopImages[]
+  coverBanner String?
+  address String
+  opening_hours String?
+  website String?
+  socialLinks Json[]
+  productAnalytics productAnalytics[]
+  ratings Float @default(0)
+  reviews shopReviews[]
+  sellerId String @unique @db.ObjectId
+  sellers sellers @relation(fields: [sellerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products products[]
+  orders    orders[]
+  followers Float? @default(0)
+
+
+  
+}
+
+model sellers {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  email String @unique
+  phone_number String 
+  country String
+  password String
+  stripeId String?
+  shop shops?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+}
+
+model site_config {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  categories String[]
+  subCategories Json
+  logo String?
+  banner Json?
+}
+
+
+model discount_codes {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  public_name String
+  discountType String
+  discountValue Float
+  discountCode String @unique
+  sellerId String @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum productStatus { 
+  Active
+  Pending
+  Draft
+}
+
+model products {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+  slug String @unique
+  category String
+  totalSales Int @default(0)
+  subCategory String
+  short_description String
+  detailed_description String
+  images productImages[] 
+  video_url String?
+  tags String[]
+  brand String?
+  colors String[]
+  sizes  String[]
+  starting_date DateTime?
+  ending_date DateTime?
+  stock Int
+  sale_price Float
+  regular_price Float
+  ratings Float @default(5)
+  warranty String?
+  custom_specifications Json?
+  productAnalytics productAnalytics?
+  custom_properties Json
+  isDeleted Boolean? @default(false)
+  cashOnDelivery String?
+  discount_codes String[] @db.ObjectId
+  status productStatus @default(Active)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shopId String @db.ObjectId
+  Shop shops @relation(fields: [shopId], references: [id])
+}
+
+// ========== ANALITIKA ==========
+
+model userAnalytics {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @unique @db.ObjectId
+  lastVisited DateTime
+  lastTrained DateTime?
+  recommendations Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  country     String?
+  city        String?
+  device      String?
+  actions     Json?
+
+  // Relacija – obavezna jer je userId obavezan
+  user users @relation(fields: [userId], references: [id])
+}
+
+model productAnalytics {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId    String   @unique @db.ObjectId
+  shopId       String?  @db.ObjectId
+  views        Int      @default(0)
+  cartAdds     Int      @default(0)
+  wishlistAdds Int      @default(0)
+  purchases    Int      @default(0)
+  lastViewedAt DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relacije – product je obavezan, shop je opcionalan (zbog shopId?)
+  product products @relation(fields: [productId], references: [id])
+  shop    shops?  @relation(fields: [shopId], references: [id])
+}
+model uniqueShopVisitors {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  shopId String @db.ObjectId
+  userId String @db.ObjectId
+  visitedAt DateTime @default(now())
+}
+
+model orders {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user users @relation(fields: [userId], references:[id])
+  shopId String @db.ObjectId
+  shop shops @relation(fields: [shopId], references:[id])
+  total Float
+  shippingAddressId String?
+  couponCode String?
+  discountAmount Float?
+  status String
+  deliveryStatus String @default("Ordered")
+  items orderItems[] @relation("OrderItemsRelation")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model orderItems { 
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId String @db.ObjectId
+  productId String
+  quantity Int
+  price Float
+  selectedOptions Json?
+
+  orders orders @relation(fields:[orderId], references:[id], name: "OrderItemsRelation")
+  createdAt DateTime @default(now())
+}
+
+enum addressType {
+  Home
+  Work
+  Other
+}
+
+model address {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  label     addressType
+  name      String
+  street    String
+  city      String
+  zip       String
+  country   String
+  isDefault Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+
+  user      users    @relation(fields: [userId], references: [id])
+}
+model notifications {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  title   String
+  message String
+
+  creatorId String @db.ObjectId
+  receiverId String 
+
+  redirect_link String?
+
+  status String @default("Unread")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+}
+
+model conversationGroup {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  isGroup Boolean @default(false)
+  name String?
+  creatorId String
+  participantIds String[] @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model participant {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String @db.ObjectId
+  userId String? @db.ObjectId
+  sellerId String? @db.ObjectId
+  lastSeenAt DateTime?
+  isOnline Boolean @default(false)
+  unreadCount Int @default(0)
+  muted Boolean @default(false)
+  joinedAt DateTime @default(now())
+}
+
+model message {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String @db.ObjectId
+  senderId String @db.ObjectId
+  senderType String
+  content String?
+  attachments String[]
+  status String @default("sent")
+  createdAt DateTime @default(now())
+
+  @@unique([conversationId, senderId, content, createdAt])
+}
