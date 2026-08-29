@@ -63,7 +63,7 @@ const Hero = () => {
   const current = slides[index]!;
 
   return (
-    <section className="mx-auto max-w-[1430px] px-4 pt-4 lg:px-8">
+    <section className="mx-auto max-w-[1500px] px-4 pt-4 lg:px-8">
       <div className="group relative h-[300px] overflow-hidden rounded-xl bg-ink sm:h-[360px] lg:h-[420px]">
         {slides.map((s:any, i:any) => (
           <img

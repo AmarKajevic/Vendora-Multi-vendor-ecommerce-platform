@@ -35,7 +35,7 @@ export function FeaturedSlider({
             <Flame className="size-6 text-deal" />
             <h2 className="text-xl font-extrabold lg:text-2xl">{title}</h2>
             <span className="hidden rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-muted-foreground sm:inline">
-              Based on top-rated vendors
+              Based on user Actions
             </span>
           </div>
           <div className="flex items-center gap-2">

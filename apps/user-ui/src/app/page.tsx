@@ -42,7 +42,7 @@ export default function Page() {
   return (
   <div className="bg-[#f5f5f5]">
     <Hero/>
- <div className="md:w-[95%] w-[100%] my-10 m-auto">
+ <div className="md:w-[100%] w-[100%] my-10 m-auto">
         {/* Prikaz preporučenih proizvoda u slideru */}
         {isLoading ? (
           // Skeleton loader za slider
