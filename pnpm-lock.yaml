@@ -315,9 +315,18 @@ importers:
       express:
         specifier: ^4.21.2
         version: 4.22.2(supports-color@8.1.1)
+      tslib:
+        specifier: ^2.6.0
+        version: 2.8.1
 
   apps/admin-ui:
     dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      framer-motion:
+        specifier: ^13.1.1
+        version: 13.1.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       next:
         specifier: ~16.0.1
         version: 16.0.11(@babel/core@7.29.7(supports-color@8.1.1))(babel-plugin-macros@3.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.103.1)
@@ -327,11 +336,14 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.8(react@19.2.8)
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
 
   apps/api-gateway:
     dependencies:
       express:
-        specifier: ^4.21.2
+        specifier: ^4.22.2
         version: 4.22.2(supports-color@8.1.1)
 
   apps/api-gateway-e2e: {}
@@ -345,6 +357,9 @@ importers:
       express:
         specifier: ^4.21.2
         version: 4.22.2(supports-color@8.1.1)
+      ws:
+        specifier: ^8.21.3
+        version: 8.21.3
 
   apps/kafka-service:
     dependencies:
@@ -357,14 +372,29 @@ importers:
   apps/logger-service:
     dependencies:
       express:
-        specifier: ^4.21.2
+        specifier: ^4.22.2
         version: 4.22.2(supports-color@8.1.1)
+      ws:
+        specifier: ^8.21.3
+        version: 8.21.3
 
   apps/order-service:
     dependencies:
+      body-parser:
+        specifier: ^1.20.6
+        version: 1.20.6(supports-color@8.1.1)
+      cookie-parser:
+        specifier: ^1.4.7
+        version: 1.4.7
+      cors:
+        specifier: ^2.8.5
+        version: 2.8.6
       express:
         specifier: ^4.21.2
         version: 4.22.2(supports-color@8.1.1)
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
 
   apps/products-service:
     dependencies:
@@ -422,6 +452,14 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.8(react@19.2.8)
+
+  packages/error-handler: {}
+
+  packages/middleware:
+    dependencies:
+      '@packages/error-handler':
+        specifier: workspace:*
+        version: link:../error-handler
 
 packages:
 

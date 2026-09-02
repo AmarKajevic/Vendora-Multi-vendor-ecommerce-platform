@@ -1,4 +1,3 @@
-// apps/user-ui/src/components/SearchBar.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -86,13 +85,16 @@ type Suggestion =
   | { kind: "term"; term: string };
 
 // ----- Glavna komponenta -----
-export default function SearchBar({
-  variant = "desktop",
-  onDone,
-}: {
-  variant?: "desktop" | "mobile";
-  onDone?: () => void;
-}) {
+export default function SearchBar({ onDone }: { onDone?: () => void }) {
+  // --- Detekcija mobilnog ekrana ---
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const { recent, push, clear } = useRecent();
   const [term, setTerm] = useState("");
   const [open, setOpen] = useState(false);
@@ -103,7 +105,7 @@ export default function SearchBar({
   const q = term.trim();
   const debouncedSearch = useDebounce(q, 300);
 
-  // ----- 1. API za pretragu proizvoda -----
+  // ----- API za pretragu proizvoda -----
   const {
     data: searchData,
     isLoading: productsLoading,
@@ -125,7 +127,7 @@ export default function SearchBar({
 
   const apiProducts = searchData?.products || [];
 
-  // ----- 2. API za kategorije (jednom) -----
+  // ----- API za kategorije -----
   const {
     data: categoriesData,
     isLoading: categoriesLoading,
@@ -134,13 +136,12 @@ export default function SearchBar({
     queryKey: ["categories"],
     queryFn: async () => {
       const res = await axiosInstance.get("product/api/get-categories");
-      return res.data; // { categories: [...], subCategories: { ... } }
+      return res.data;
     },
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });
 
-  // Pripremi kategorije + subkategorije za pretragu
   const categoryItems = useMemo(() => {
     if (!categoriesData) return [];
     const cats = categoriesData.categories || [];
@@ -154,7 +155,7 @@ export default function SearchBar({
     return result;
   }, [categoriesData]);
 
-  // ----- 3. API za top prodavnice (jednom) -----
+  // ----- API za top prodavnice -----
   const {
     data: topShopsData,
     isLoading: storesLoading,
@@ -171,32 +172,25 @@ export default function SearchBar({
 
   const topShops = topShopsData?.shops || [];
 
-
-  // ----- Izgradnja suggestions (kombinacija svega) -----
+  // ----- Izgradnja suggestions -----
   const suggestions = useMemo<Suggestion[]>(() => {
     if (!q) return [];
 
     const lower = q.toLowerCase();
 
-    // 1. proizvodi iz API-ja
-    const products = apiProducts.slice(0, 5).map((p: any) => {
-      const imageUrl = p.images?.[0]?.url || p.image || "/placeholder.png";
-      const price = p.sale_price ?? p.regular_price ?? 0;
-      return {
-        kind: "product" as const,
-        product: {
-          id: p.id,
-          slug: p.slug || p.id, // koristi slug ako postoji, inače id
-          name: p.title || p.name,
-          image: imageUrl,
-          price: price,
-          sold: p.totalSales ?? p.sold ?? 0,
-          choice: p.choice ?? false,
-        },
-      };
-    });
+    const products = apiProducts.slice(0, 5).map((p: any) => ({
+      kind: "product" as const,
+      product: {
+        id: p.id,
+        slug: p.slug || p.id,
+        name: p.title || p.name,
+        image: p.images?.[0]?.url || p.image || "/placeholder.png",
+        price: p.sale_price ?? p.regular_price ?? 0,
+        sold: p.totalSales ?? p.sold ?? 0,
+        choice: p.choice ?? false,
+      },
+    }));
 
-    // 2. kategorije (iz API-ja) – uključujemo i kategorije i subkategorije
     const matchedCategories = categoryItems
       .filter((name) => name.toLowerCase().includes(lower))
       .slice(0, 4)
@@ -205,7 +199,6 @@ export default function SearchBar({
         name,
       }));
 
-    // 3. prodavnice (iz API-ja top-shops) – filtriramo po nazivu
     const matchedStores = topShops
       .filter((store: any) => store.name.toLowerCase().includes(lower))
       .slice(0, 3)
@@ -221,7 +214,6 @@ export default function SearchBar({
         },
       }));
 
-    // 4. na kraju dodaj "Search term" kao prvu opciju
     return [
       { kind: "term" as const, term: q },
       ...products,
@@ -230,12 +222,20 @@ export default function SearchBar({
     ];
   }, [q, apiProducts, categoryItems, topShops]);
 
+  // ----- Zatvaranje dropdown-a -----
+  const closeDropdown = () => {
+    setOpen(false);
+    onDone?.();
+  };
+
   // ----- Keyboard & outside click -----
   useEffect(() => setCursor(-1), [q]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
+      if (wrap.current && !wrap.current.contains(e.target as Node)) {
+        closeDropdown();
+      }
     };
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -250,27 +250,21 @@ export default function SearchBar({
       document.removeEventListener("mousedown", onClick);
       document.removeEventListener("keydown", onKey);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ----- Akcije (koriste window.location) -----
+  // ----- Akcije -----
   const goSearch = (value: string) => {
     const v = value.trim();
     if (v) push(v);
-    setOpen(false);
+    closeDropdown();
     setTerm(v);
-    onDone?.();
     window.location.href = `/products?q=${encodeURIComponent(v)}&store=&sort=relevance`;
-  };
-
-  // Zatvaranje dropdown-a nakon klika na Link
-  const closeDropdown = () => {
-    setOpen(false);
-    onDone?.();
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
-      setOpen(false);
+      closeDropdown();
       input.current?.blur();
       return;
     }
@@ -301,15 +295,15 @@ export default function SearchBar({
     }
   };
 
-  const isMobile = variant === "mobile";
-
-  // Ukupno loading / error
   const isLoading = productsLoading || categoriesLoading || storesLoading;
   const isError = productsError || categoriesError || storesError;
 
   // ----- UI -----
   return (
-    <div ref={wrap} className={`relative ${isMobile ? "w-full" : "hidden flex-1 md:block"}`} >
+    <div
+      ref={wrap}
+      className={`relative ${isMobile ? "w-full" : "flex-1"}`}
+    >
       {/* glow frame */}
       <div
         className={`pointer-events-none absolute -inset-[3px] rounded-full opacity-0 blur-md transition-opacity duration-300 ${
@@ -334,16 +328,20 @@ export default function SearchBar({
             } else {
               goSearch(s.term);
             }
-            closeDropdown();
           } else {
             goSearch(term);
           }
+          closeDropdown();
         }}
-        className={`relative flex items-center rounded-full border-2 bg-background transition-[border-color,box-shadow] duration-200 ${
+        className={`relative flex items-center rounded-full border-2 bg-background border-accent transition-[border-color,box-shadow] duration-200 ${
           open ? "border-accent shadow-[var(--shadow-card)]" : "border-accent/70"
         } ${isMobile ? "pl-3" : "pl-4"}`}
       >
-        <Search className={`size-4 shrink-0 transition-colors ${open ? "text-accent" : "text-muted-foreground"}`} />
+        <Search
+          className={`size-4 shrink-0 transition-colors ${
+            open ? "text-accent" : "text-muted-foreground"
+          }`}
+        />
         <input
           ref={input}
           value={term}
@@ -356,7 +354,11 @@ export default function SearchBar({
           aria-label="Search products"
           role="combobox"
           aria-expanded={open}
-          placeholder={isMobile ? "Search products…" : "Search for headphones, drones, sneakers…"}
+          placeholder={
+            isMobile
+              ? "Search products…"
+              : "Search for headphones, drones, sneakers…"
+          }
           className={`min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground ${
             isMobile ? "px-2 py-2" : "px-3 py-2.5"
           }`}
@@ -483,7 +485,9 @@ export default function SearchBar({
                             className="size-11 shrink-0 rounded-lg border border-border object-cover"
                           />
                           <span className="min-w-0 flex-1">
-                            <span className="line-clamp-1 block font-medium">{highlight(s.store.name, q)}</span>
+                            <span className="line-clamp-1 block font-medium">
+                              {highlight(s.store.name, q)}
+                            </span>
                             <span className="text-xs text-muted-foreground">
                               Store · {s.store.rating} ★ rating · {s.store.totalSales} sales
                             </span>
@@ -516,7 +520,7 @@ export default function SearchBar({
               )}
               {!isLoading && !isError && suggestions.length === 0 && (
                 <li className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  Nema rezultata za "{q}"
+                  No results for "{q}"
                 </li>
               )}
             </ul>

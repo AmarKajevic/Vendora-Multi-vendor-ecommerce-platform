@@ -1,5 +1,5 @@
 # ============================================================
-# VENDORA - auth Service
+# VENDORA - Order Service
 # ============================================================
 
 # ------------------------------------------------------------
@@ -21,8 +21,8 @@ RUN apk add --no-cache openssl
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
-COPY apps/auth-service/package.json \
-     ./apps/auth-service/package.json
+COPY apps/order-service/package.json \
+     ./apps/order-service/package.json
 
 COPY packages/error-handler \
      ./packages/error-handler
@@ -33,10 +33,11 @@ COPY packages/libs/prisma \
 # ------------------------------------------------------------
 # Dependencies
 # ------------------------------------------------------------
+
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install \
     --frozen-lockfile \
-    --filter "...auth-service" \
+    --filter "...order-service" \
     --fetch-retries 5 \
     --fetch-retry-factor 2 \
     --fetch-retry-mintimeout 20000 \
@@ -48,8 +49,8 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 
 COPY prisma ./prisma
 
-COPY apps/auth-service/dist \
-     ./apps/auth-service/dist
+COPY apps/order-service/dist \
+     ./apps/order-service/dist
 
 # ------------------------------------------------------------
 # Prisma Client
@@ -117,8 +118,8 @@ COPY --from=builder \
 
 USER nodejs
 
-EXPOSE 6001
+EXPOSE 6004
 
 ENTRYPOINT ["dumb-init", "--"]
 
-CMD ["node", "apps/auth-service/dist/main.js"]
+CMD ["node", "apps/order-service/dist/main.js"]

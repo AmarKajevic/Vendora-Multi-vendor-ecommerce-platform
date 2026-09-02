@@ -2,10 +2,15 @@ import axios from "axios";
 import { runRedirectLogin } from "./redirect";
 
 
+const baseURL =
+    typeof window === "undefined"
+        ? process.env.INTERNAL_SERVER_URL
+        : process.env.NEXT_PUBLIC_SERVER_URL;
+
 const axiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_SERVER_URL,
-    withCredentials: true
-})
+    baseURL,
+    withCredentials: true,
+});
 
 let isRefreshing = false;
 let refreshSubscribers: (() => void)[]= [];

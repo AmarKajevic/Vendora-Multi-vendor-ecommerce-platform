@@ -18,6 +18,7 @@ const SellerPayments = () => {
     queryFn: fetchOrders,
     staleTime: 1000 * 60 * 5,
   });
+  console.log(orders)
 
   const columns = useMemo(
     () => [
@@ -35,7 +36,7 @@ const SellerPayments = () => {
         header: "Buyer",
         cell: ({ row }: any) => (
           <span className="text-white ">
-            #{row.original.user?.naem || "Guest"}
+            #{row.original.user?.name || "Guest"}
           </span>
         ),
       },

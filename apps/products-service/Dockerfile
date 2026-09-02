@@ -1,5 +1,5 @@
 # ============================================================
-# VENDORA - auth Service
+# VENDORA - products Service
 # ============================================================
 
 # ------------------------------------------------------------
@@ -21,8 +21,8 @@ RUN apk add --no-cache openssl
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
-COPY apps/auth-service/package.json \
-     ./apps/auth-service/package.json
+COPY apps/products-service/package.json \
+     ./apps/products-service/package.json
 
 COPY packages/error-handler \
      ./packages/error-handler
@@ -33,14 +33,16 @@ COPY packages/libs/prisma \
 # ------------------------------------------------------------
 # Dependencies
 # ------------------------------------------------------------
+
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install \
     --frozen-lockfile \
-    --filter "...auth-service" \
+    --filter "...products-service" \
     --fetch-retries 5 \
     --fetch-retry-factor 2 \
     --fetch-retry-mintimeout 20000 \
     --fetch-retry-maxtimeout 120000
+
 
 # ------------------------------------------------------------
 # Runtime source files
@@ -48,8 +50,8 @@ RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 
 COPY prisma ./prisma
 
-COPY apps/auth-service/dist \
-     ./apps/auth-service/dist
+COPY apps/products-service/dist \
+     ./apps/products-service/dist
 
 # ------------------------------------------------------------
 # Prisma Client
@@ -60,14 +62,14 @@ RUN pnpm exec prisma generate \
 
 
 # ============================================================
-# PRODUCTION
+# productsION
 # ============================================================
 
-FROM node:24-alpine AS production
+FROM node:24-alpine AS productsion
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+ENV NODE_ENV=productsion
 
 RUN apk add --no-cache \
     openssl \
@@ -117,8 +119,8 @@ COPY --from=builder \
 
 USER nodejs
 
-EXPOSE 6001
+EXPOSE 6002
 
 ENTRYPOINT ["dumb-init", "--"]
 
-CMD ["node", "apps/auth-service/dist/main.js"]
+CMD ["node", "apps/products-service/dist/main.js"]

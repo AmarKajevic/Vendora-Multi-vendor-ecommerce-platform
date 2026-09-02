@@ -243,7 +243,7 @@ const Page = () => {
                       {product.title || "Bez naziva"}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      {typeof price === "number" ? `${price} RSD` : price}
+                      {typeof price === "number" ? `${price} $` : price}
                     </p>
                   </div>
                 );
