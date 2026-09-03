@@ -1,44 +1,102 @@
-name: CI
+name: Vendora CI
 
 on:
   push:
     branches:
-      - master
+      - main
+
   pull_request:
+    branches:
+      - main
 
 permissions:
-  actions: read
   contents: read
 
+concurrency:
+  group: vendora-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  main:
+  build:
+    name: Install, Verify & Build
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      # ============================================================
+      # CHECKOUT
+      # ============================================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
         with:
-          filter: tree:0
           fetch-depth: 0
 
-      
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Uncomment this line to enable task distribution
-      # - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
+      # ============================================================
+      # NODE.JS
+      # ============================================================
 
-      
-      # Cache node_modules
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
-          cache: 'npm'
-       
-      - run: npm ci
+          node-version: 24
 
+      # ============================================================
+      # PNPM
+      # ============================================================
 
-      # Prepend any command with "nx record --" to record its logs to Nx Cloud
-      # - run: npx nx record -- echo Hello World
-      - run: npx nx run-many -t lint test build typecheck
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
-      - run: npx nx fix-ci
-        if: always()
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+          run_install: false
+
+      # ============================================================
+      # PNPM CACHE
+      # ============================================================
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # ============================================================
+      # INSTALL DEPENDENCIES
+      # ============================================================
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ============================================================
+      # ENVIRONMENT CHECK
+      # ============================================================
+
+      - name: Check Node.js version
+        run: node --version
+
+      - name: Check pnpm version
+        run: pnpm --version
+
+      # ============================================================
+      # NX
+      # ============================================================
+
+      - name: Nx report
+        run: pnpm nx report
+
+      - name: Show Nx projects
+        run: pnpm nx show projects
+
+      # ============================================================
+      # BUILD
+      # ============================================================
+
+      - name: Build all applications
+        run: pnpm build
