@@ -1,0 +1,241 @@
+name: Vendora Docker Publish
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vendora-docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKERHUB_USERNAME: amar997
+
+jobs:
+
+  # ============================================================
+  # BUILD APPLICATIONS
+  # ============================================================
+
+  build:
+    name: Build Applications
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # ------------------------------------------------------------
+      # NODE
+      # ------------------------------------------------------------
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # ------------------------------------------------------------
+      # PNPM
+      # ------------------------------------------------------------
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.24.0
+          run_install: false
+
+      # ------------------------------------------------------------
+      # PNPM CACHE
+      # ------------------------------------------------------------
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # ------------------------------------------------------------
+      # INSTALL
+      # ------------------------------------------------------------
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ------------------------------------------------------------
+      # BUILD
+      #
+      # Backend Dockerfiles expect apps/*/dist to already exist.
+      # Therefore we build the Nx workspace before Docker build.
+      # ------------------------------------------------------------
+
+      - name: Build all applications
+        run: pnpm build
+
+      # ------------------------------------------------------------
+      # UPLOAD DIST ARTIFACTS
+      # ------------------------------------------------------------
+
+      - name: Upload application dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendora-dist
+          path: |
+            apps/*/dist
+          retention-days: 1
+
+
+  # ============================================================
+  # DOCKER PUBLISH
+  # ============================================================
+
+  docker:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs:
+      - build
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+
+          # ------------------------------------------------------
+          # BACKEND SERVICES
+          # ------------------------------------------------------
+
+          - name: api-gateway
+            image: amar997/vendora-api-gateway
+            dockerfile: apps/api-gateway/Dockerfile
+
+          - name: auth-service
+            image: amar997/vendora-auth-service
+            dockerfile: apps/auth-service/Dockerfile
+
+          - name: products-service
+            image: amar997/vendora-products-service
+            dockerfile: apps/products-service/Dockerfile
+
+          - name: seller-service
+            image: amar997/vendora-seller-service
+            dockerfile: apps/seller-service/Dockerfile
+
+          - name: order-service
+            image: amar997/vendora-order-service
+            dockerfile: apps/order-service/Dockerfile
+
+          - name: admin-service
+            image: amar997/vendora-admin-service
+            dockerfile: apps/admin-service/Dockerfile
+
+          - name: chatting-service
+            image: amar997/vendora-chatting-service
+            dockerfile: apps/chatting-service/Dockerfile
+
+          - name: recommendation-service
+            image: amar997/vendora-recommendation-service
+            dockerfile: apps/recommendation-service/Dockerfile
+
+          - name: logger-service
+            image: amar997/vendora-logger-service
+            dockerfile: apps/logger-service/Dockerfile
+
+          - name: kafka-service
+            image: amar997/vendora-kafka-service
+            dockerfile: apps/kafka-service/Dockerfile
+
+          # ------------------------------------------------------
+          # FRONTEND
+          # ------------------------------------------------------
+
+          - name: user-ui
+            image: amar997/vendora-user-ui
+            dockerfile: apps/user-ui/Dockerfile
+
+          - name: seller-ui
+            image: amar997/vendora-seller-ui
+            dockerfile: apps/seller-ui/Dockerfile
+
+          - name: admin-ui
+            image: amar997/vendora-admin-ui
+            dockerfile: apps/admin-ui/Dockerfile
+
+
+    steps:
+
+      # ==========================================================
+      # CHECKOUT
+      # ==========================================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # ==========================================================
+      # DOWNLOAD PREBUILT DIST
+      # ==========================================================
+
+      - name: Download application dist
+        uses: actions/download-artifact@v4
+        with:
+          name: vendora-dist
+          path: .
+
+      # ==========================================================
+      # DOCKER BUILDX
+      # ==========================================================
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # ==========================================================
+      # DOCKER HUB LOGIN
+      # ==========================================================
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ==========================================================
+      # DOCKER METADATA
+      # ==========================================================
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ matrix.image }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=,format=short
+
+      # ==========================================================
+      # BUILD & PUSH
+      # ==========================================================
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
