@@ -1,0 +1,561 @@
+services:
+
+  # ============================================================
+  # NGINX
+  # ============================================================
+
+  nginx:
+    image: nginx:alpine
+    container_name: vendora-nginx
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+    depends_on:
+      - api-gateway
+      - user-ui
+      - seller-ui
+      - admin-ui
+
+    restart: unless-stopped
+
+
+  # ============================================================
+  # ZOOKEEPER
+  # ============================================================
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: vendora-zookeeper
+
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.2"
+
+
+  # ============================================================
+  # KAFKA
+  # ============================================================
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: vendora-kafka
+
+    depends_on:
+      zookeeper:
+        condition: service_started
+
+    ports:
+      - "9092:9092"
+
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      KAFKA_ADVERTISED_LISTENERS: >-
+        PLAINTEXT://kafka:29092,
+        PLAINTEXT_HOST://localhost:9092
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: >-
+        PLAINTEXT:PLAINTEXT,
+        PLAINTEXT_HOST:PLAINTEXT
+
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "kafka-topics",
+          "--bootstrap-server",
+          "localhost:9092",
+          "--list"
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.5"
+
+
+  # ============================================================
+  # KAFKA TOPIC SETUP
+  # ============================================================
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: vendora-kafka-setup
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    command: >
+      bash -c "
+        echo 'Creating Kafka topics...';
+
+        kafka-topics
+        --create
+        --if-not-exists
+        --topic user-events
+        --bootstrap-server kafka:29092;
+
+        kafka-topics
+        --create
+        --if-not-exists
+        --topic logs
+        --bootstrap-server kafka:29092;
+
+        kafka-topics
+        --create
+        --if-not-exists
+        --topic chat.new_message
+        --bootstrap-server kafka:29092;
+
+        echo 'Kafka topics ready';
+      "
+
+    restart: "no"
+
+
+  # ============================================================
+  # API GATEWAY
+  # ============================================================
+
+  api-gateway:
+    image: amar997/vendora-api-gateway:latest
+    container_name: vendora-api-gateway
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "8080:8080"
+
+    restart: unless-stopped
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:8080/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # AUTH SERVICE
+  # ============================================================
+
+  auth-service:
+    image: amar997/vendora-auth-service:latest
+    container_name: vendora-auth-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 6001
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "6001:6001"
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # PRODUCTS SERVICE
+  # ============================================================
+
+  products-service:
+    image: amar997/vendora-products-service:latest
+    container_name: vendora-products-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 6002
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "6002:6002"
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # SELLER SERVICE
+  # ============================================================
+
+  seller-service:
+    image: amar997/vendora-seller-service:latest
+    container_name: vendora-seller-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 6003
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "6003:6003"
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # ORDER SERVICE
+  # ============================================================
+
+  order-service:
+    image: amar997/vendora-order-service:latest
+    container_name: vendora-order-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 6004
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "6004:6004"
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # ADMIN SERVICE
+  # ============================================================
+
+  admin-service:
+    image: amar997/vendora-admin-service:latest
+    container_name: vendora-admin-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 6005
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "6005:6005"
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # CHATTING SERVICE
+  # ============================================================
+
+  chatting-service:
+    image: amar997/vendora-chatting-service:latest
+    container_name: vendora-chatting-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 6006
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "6006:6006"
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # RECOMMENDATION SERVICE
+  # ============================================================
+
+  recommendation-service:
+    image: amar997/vendora-recommendation-service:latest
+    container_name: vendora-recommendation-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 6007
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "6007:6007"
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "0.5"
+
+
+  # ============================================================
+  # LOGGER SERVICE
+  # ============================================================
+
+  logger-service:
+    image: amar997/vendora-logger-service:latest
+    container_name: vendora-logger-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 6008
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    ports:
+      - "6008:6008"
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # KAFKA SERVICE
+  # ============================================================
+
+  kafka-service:
+    image: amar997/vendora-kafka-service:latest
+    container_name: vendora-kafka-service
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      DOCKER_ENV: "true"
+      KAFKA_BROKERS: kafka:29092
+
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # USER UI
+  # ============================================================
+
+  user-ui:
+    image: amar997/vendora-user-ui:latest
+    container_name: vendora-user-ui
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # SELLER UI
+  # ============================================================
+
+  seller-ui:
+    image: amar997/vendora-seller-ui:latest
+    container_name: vendora-seller-ui
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOSTNAME: 0.0.0.0
+
+    restart: unless-stopped
+
+    ports:
+      - "3001:3001"
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+  # ============================================================
+  # ADMIN UI
+  # ============================================================
+
+  admin-ui:
+    image: amar997/vendora-admin-ui:latest
+    container_name: vendora-admin-ui
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      HOSTNAME: 0.0.0.0
+
+    restart: unless-stopped
+
+    ports:
+      - "3002:3002"
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.3"
+
+
+# ============================================================
+# NETWORK
+# ============================================================
+
+networks:
+  default:
+    name: vendora-network
