@@ -154,6 +154,108 @@ jobs:
       - name: Prepare backend dist artifact
         shell: bash
         run: |
+          set -euxo pipefail
+
+          echo "=========================================="
+          echo "CURRENT DIRECTORY"
+          echo "=========================================="
+
+          pwd
+
+          echo ""
+          echo "=========================================="
+          echo "APPS DIRECTORY"
+          echo "=========================================="
+
+          ls -la apps
+
+          echo ""
+          echo "=========================================="
+          echo "ALL DIST DIRECTORIES"
+          echo "=========================================="
+
+          find apps -type d -name dist -print
+
+          echo ""
+          echo "=========================================="
+          echo "CHECKING BACKEND SERVICES"
+          echo "=========================================="
+
+          services=(
+            api-gateway
+            auth-service
+            products-service
+            seller-service
+            order-service
+            admin-service
+            chatting-service
+            recommendation-service
+            logger-service
+            kafka-service
+          )
+
+          for service in "${services[@]}"; do
+            echo ""
+            echo "------------------------------------------"
+            echo "Checking $service"
+            echo "------------------------------------------"
+
+            if [ ! -d "apps/$service/dist" ]; then
+              echo "ERROR: apps/$service/dist DOES NOT EXIST"
+              exit 1
+            fi
+
+            echo "FOUND: apps/$service/dist"
+
+            ls -la "apps/$service/dist"
+
+          done
+
+          echo ""
+          echo "=========================================="
+          echo "CREATING .ci-dist"
+          echo "=========================================="
+
+          rm -rf .ci-dist
+          mkdir -p .ci-dist/apps
+
+          for service in "${services[@]}"; do
+
+            echo "Copying $service..."
+
+            mkdir -p ".ci-dist/apps/$service"
+
+            cp -R \
+              "apps/$service/dist" \
+              ".ci-dist/apps/$service/"
+
+          done
+
+          echo ""
+          echo "=========================================="
+          echo "VERIFYING .ci-dist"
+          echo "=========================================="
+
+          if [ ! -d ".ci-dist" ]; then
+            echo "ERROR: .ci-dist was not created"
+            exit 1
+          fi
+
+          find .ci-dist -type d -print
+
+          echo ""
+          echo "=========================================="
+          echo "VERIFYING ARTIFACT FILES"
+          echo "=========================================="
+
+          find .ci-dist -type f | head -100
+
+          echo ""
+          echo "=========================================="
+          echo "ARTIFACT PREPARATION SUCCESSFUL"
+          echo "=========================================="
+        shell: bash
+        run: |
           set -e
 
           rm -rf .ci-dist
