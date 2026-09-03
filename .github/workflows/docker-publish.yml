@@ -37,7 +37,7 @@ jobs:
           fetch-depth: 0
 
       # ==========================================================
-      # NODE
+      # NODE.JS
       # ==========================================================
 
       - name: Setup Node.js
@@ -73,33 +73,35 @@ jobs:
             ${{ runner.os }}-pnpm-
 
       # ==========================================================
-      # INSTALL
+      # INSTALL DEPENDENCIES
       # ==========================================================
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       # ==========================================================
-      # BUILD
+      # BUILD ALL APPLICATIONS
       #
-      # Backend Dockerfiles expect:
+      # We intentionally skip the Nx cache here.
+      #
+      # Backend Dockerfiles require:
       #
       # apps/<service>/dist
       #
-      # Therefore Nx must build the applications before Docker.
+      # to physically exist on the GitHub runner.
       # ==========================================================
 
       - name: Build all applications
-        run: pnpm build
+        run: pnpm nx run-many --target=build --all --parallel=3 --skip-nx-cache
 
       # ==========================================================
-      # VERIFY BUILD OUTPUTS
+      # VERIFY BACKEND BUILD OUTPUTS
       # ==========================================================
 
       - name: Verify backend build outputs
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
 
           services=(
             api-gateway
@@ -115,152 +117,67 @@ jobs:
           )
 
           echo "=========================================="
-          echo "VERIFYING BACKEND BUILD OUTPUTS"
+          echo "BACKEND BUILD OUTPUT VERIFICATION"
           echo "=========================================="
+
+          echo ""
+          echo "All dist directories found:"
+          find apps -type d -name dist -print
+
+          echo ""
+          echo "Checking required backend services..."
 
           for service in "${services[@]}"; do
 
             echo ""
+            echo "------------------------------------------"
             echo "Checking: apps/$service/dist"
+            echo "------------------------------------------"
 
             if [ ! -d "apps/$service/dist" ]; then
               echo "ERROR: apps/$service/dist does not exist"
               exit 1
             fi
 
+            if [ -z "$(find "apps/$service/dist" -type f -print -quit)" ]; then
+              echo "ERROR: apps/$service/dist exists but is empty"
+              exit 1
+            fi
+
             echo "OK: apps/$service/dist"
 
+            echo "Files:"
             find "apps/$service/dist" -maxdepth 2 -type f | head -20
 
           done
 
           echo ""
           echo "=========================================="
-          echo "ALL BACKEND BUILD OUTPUTS ARE PRESENT"
+          echo "ALL BACKEND BUILD OUTPUTS ARE VALID"
           echo "=========================================="
 
       # ==========================================================
       # PREPARE BACKEND DIST ARTIFACT
       #
-      # We explicitly create the structure that Docker expects:
+      # We create a controlled artifact structure:
       #
       # .ci-dist/
-      #   apps/
-      #     api-gateway/dist
-      #     auth-service/dist
-      #     ...
+      # └── apps/
+      #     ├── api-gateway/
+      #     │   └── dist/
+      #     ├── auth-service/
+      #     │   └── dist/
+      #     ├── products-service/
+      #     │   └── dist/
+      #     └── ...
+      #
+      # This structure is restored in the Docker job.
       # ==========================================================
 
       - name: Prepare backend dist artifact
         shell: bash
         run: |
-          set -euxo pipefail
-
-          echo "=========================================="
-          echo "CURRENT DIRECTORY"
-          echo "=========================================="
-
-          pwd
-
-          echo ""
-          echo "=========================================="
-          echo "APPS DIRECTORY"
-          echo "=========================================="
-
-          ls -la apps
-
-          echo ""
-          echo "=========================================="
-          echo "ALL DIST DIRECTORIES"
-          echo "=========================================="
-
-          find apps -type d -name dist -print
-
-          echo ""
-          echo "=========================================="
-          echo "CHECKING BACKEND SERVICES"
-          echo "=========================================="
-
-          services=(
-            api-gateway
-            auth-service
-            products-service
-            seller-service
-            order-service
-            admin-service
-            chatting-service
-            recommendation-service
-            logger-service
-            kafka-service
-          )
-
-          for service in "${services[@]}"; do
-            echo ""
-            echo "------------------------------------------"
-            echo "Checking $service"
-            echo "------------------------------------------"
-
-            if [ ! -d "apps/$service/dist" ]; then
-              echo "ERROR: apps/$service/dist DOES NOT EXIST"
-              exit 1
-            fi
-
-            echo "FOUND: apps/$service/dist"
-
-            ls -la "apps/$service/dist"
-
-          done
-
-          echo ""
-          echo "=========================================="
-          echo "CREATING .ci-dist"
-          echo "=========================================="
-
-          rm -rf .ci-dist
-          mkdir -p .ci-dist/apps
-
-          for service in "${services[@]}"; do
-
-            echo "Copying $service..."
-
-            mkdir -p ".ci-dist/apps/$service"
-
-            cp -R \
-              "apps/$service/dist" \
-              ".ci-dist/apps/$service/"
-
-          done
-
-          echo ""
-          echo "=========================================="
-          echo "VERIFYING .ci-dist"
-          echo "=========================================="
-
-          if [ ! -d ".ci-dist" ]; then
-            echo "ERROR: .ci-dist was not created"
-            exit 1
-          fi
-
-          find .ci-dist -type d -print
-
-          echo ""
-          echo "=========================================="
-          echo "VERIFYING ARTIFACT FILES"
-          echo "=========================================="
-
-          find .ci-dist -type f | head -100
-
-          echo ""
-          echo "=========================================="
-          echo "ARTIFACT PREPARATION SUCCESSFUL"
-          echo "=========================================="
-        shell: bash
-        run: |
-          set -e
-
-          rm -rf .ci-dist
-
-          mkdir -p .ci-dist/apps
+          set -euo pipefail
 
           services=(
             api-gateway
@@ -279,38 +196,54 @@ jobs:
           echo "PREPARING BACKEND DIST ARTIFACT"
           echo "=========================================="
 
+          rm -rf .ci-dist
+          mkdir -p .ci-dist/apps
+
           for service in "${services[@]}"; do
 
             echo ""
             echo "Preparing $service..."
 
-            if [ ! -d "apps/$service/dist" ]; then
-              echo "ERROR: apps/$service/dist does not exist"
+            source_dir="apps/$service/dist"
+            target_dir=".ci-dist/apps/$service/dist"
+
+            if [ ! -d "$source_dir" ]; then
+              echo "ERROR: $source_dir does not exist"
               exit 1
             fi
 
             mkdir -p ".ci-dist/apps/$service"
 
-            cp -R "apps/$service/dist" \
-              ".ci-dist/apps/$service/"
+            cp -R "$source_dir" "$target_dir"
 
-            echo "Copied: apps/$service/dist"
+            echo "Copied:"
+            echo "  $source_dir"
+            echo "  -> $target_dir"
 
           done
 
           echo ""
           echo "=========================================="
-          echo "ARTIFACT DIRECTORIES"
+          echo "VERIFYING .ci-dist"
           echo "=========================================="
 
-          find .ci-dist/apps -maxdepth 3 -type d -print
+          if [ ! -d ".ci-dist/apps" ]; then
+            echo "ERROR: .ci-dist/apps was not created"
+            exit 1
+          fi
+
+          echo ""
+          echo "Directories:"
+          find .ci-dist/apps -type d -print
+
+          echo ""
+          echo "Files:"
+          find .ci-dist/apps -type f | head -100
 
           echo ""
           echo "=========================================="
-          echo "ARTIFACT FILES"
+          echo "BACKEND ARTIFACT PREPARATION SUCCESSFUL"
           echo "=========================================="
-
-          find .ci-dist/apps -type f | head -100
 
       # ==========================================================
       # UPLOAD BACKEND DIST ARTIFACT
@@ -326,7 +259,7 @@ jobs:
 
 
   # ============================================================
-  # DOCKER PUBLISH
+  # DOCKER BUILD & PUBLISH
   # ============================================================
 
   docker:
@@ -427,44 +360,21 @@ jobs:
       # ==========================================================
       # RESTORE BACKEND DIST
       #
-      # Artifact:
+      # Downloaded:
       #
       # .ci-dist/apps/api-gateway/dist
       #
-      # becomes:
+      # Restored to:
       #
       # apps/api-gateway/dist
       #
-      # which is exactly what the Dockerfiles expect.
+      # This is exactly what the backend Dockerfiles expect.
       # ==========================================================
 
       - name: Restore backend dist
         shell: bash
         run: |
-          set -e
-
-          echo "=========================================="
-          echo "DOWNLOADED ARTIFACT"
-          echo "=========================================="
-
-          find .ci-dist -maxdepth 4 -type d -print
-
-          echo ""
-          echo "=========================================="
-          echo "RESTORING APPS DIRECTORY"
-          echo "=========================================="
-
-          if [ ! -d ".ci-dist/apps" ]; then
-            echo "ERROR: .ci-dist/apps does not exist"
-            exit 1
-          fi
-
-          cp -R .ci-dist/apps/. apps/
-
-          echo ""
-          echo "=========================================="
-          echo "VERIFYING RESTORED BACKEND DIST"
-          echo "=========================================="
+          set -euo pipefail
 
           services=(
             api-gateway
@@ -479,14 +389,49 @@ jobs:
             kafka-service
           )
 
+          echo "=========================================="
+          echo "DOWNLOADED ARTIFACT"
+          echo "=========================================="
+
+          if [ ! -d ".ci-dist" ]; then
+            echo "ERROR: .ci-dist does not exist"
+            exit 1
+          fi
+
+          find .ci-dist -type d -print
+
+          echo ""
+          echo "=========================================="
+          echo "RESTORING BACKEND DIST DIRECTORIES"
+          echo "=========================================="
+
+          if [ ! -d ".ci-dist/apps" ]; then
+            echo "ERROR: .ci-dist/apps does not exist"
+            exit 1
+          fi
+
+          cp -R .ci-dist/apps/. apps/
+
+          echo ""
+          echo "=========================================="
+          echo "VERIFYING RESTORED DIST DIRECTORIES"
+          echo "=========================================="
+
           for service in "${services[@]}"; do
 
-            if [ ! -d "apps/$service/dist" ]; then
-              echo "ERROR: apps/$service/dist is missing"
+            dist_dir="apps/$service/dist"
+
+            if [ ! -d "$dist_dir" ]; then
+              echo "ERROR: $dist_dir is missing"
               exit 1
             fi
 
-            echo "OK: apps/$service/dist"
+            if [ -z "$(find "$dist_dir" -type f -print -quit)" ]; then
+              echo "ERROR: $dist_dir is empty"
+              exit 1
+            fi
+
+            echo "OK: $dist_dir"
 
           done
 
@@ -526,7 +471,7 @@ jobs:
             type=sha,prefix=,format=short
 
       # ==========================================================
-      # BUILD & PUSH
+      # BUILD & PUSH DOCKER IMAGE
       # ==========================================================
 
       - name: Build and push Docker image
