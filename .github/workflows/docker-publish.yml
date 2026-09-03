@@ -88,30 +88,51 @@ jobs:
       # UPLOAD DIST ARTIFACTS
       # ------------------------------------------------------------
 
-      - name: Verify build outputs
+      - name: Prepare backend dist artifact
         shell: bash
         run: |
-          echo "=== API Gateway ==="
-          ls -la apps/api-gateway/dist || true
+          set -e
 
-          echo "=== All application dist directories ==="
-          find apps -maxdepth 3 -type d -name dist -print
+          rm -rf .ci-dist
+          mkdir -p .ci-dist/apps
 
-      - name: Upload application dist
+          services=(
+            api-gateway
+            auth-service
+            products-service
+            seller-service
+            order-service
+            admin-service
+            chatting-service
+            recommendation-service
+            logger-service
+            kafka-service
+          )
+
+          for service in "${services[@]}"; do
+            echo "Preparing $service..."
+
+            if [ ! -d "apps/$service/dist" ]; then
+              echo "ERROR: apps/$service/dist does not exist"
+              exit 1
+            fi
+
+            mkdir -p ".ci-dist/apps/$service"
+            cp -R "apps/$service/dist" ".ci-dist/apps/$service/"
+          done
+
+          echo ""
+          echo "=== Prepared artifact ==="
+          find .ci-dist/apps -maxdepth 3 -type d -print
+          echo ""
+          echo "=== Dist contents ==="
+          find .ci-dist/apps -type f | head -100
+
+      - name: Upload backend dist artifact
         uses: actions/upload-artifact@v4
         with:
           name: vendora-dist
-          path: |
-            apps/api-gateway/dist/**
-            apps/auth-service/dist/**
-            apps/products-service/dist/**
-            apps/seller-service/dist/**
-            apps/order-service/dist/**
-            apps/admin-service/dist/**
-            apps/chatting-service/dist/**
-            apps/recommendation-service/dist/**
-            apps/logger-service/dist/**
-            apps/kafka-service/dist/**
+          path: .ci-dist
           retention-days: 1
           if-no-files-found: error
 
