@@ -88,14 +88,32 @@ jobs:
       # UPLOAD DIST ARTIFACTS
       # ------------------------------------------------------------
 
+      - name: Verify build outputs
+        shell: bash
+        run: |
+          echo "=== API Gateway ==="
+          ls -la apps/api-gateway/dist || true
+
+          echo "=== All application dist directories ==="
+          find apps -maxdepth 3 -type d -name dist -print
+
       - name: Upload application dist
         uses: actions/upload-artifact@v4
         with:
           name: vendora-dist
           path: |
-            apps/*/dist
+            apps/api-gateway/dist/**
+            apps/auth-service/dist/**
+            apps/products-service/dist/**
+            apps/seller-service/dist/**
+            apps/order-service/dist/**
+            apps/admin-service/dist/**
+            apps/chatting-service/dist/**
+            apps/recommendation-service/dist/**
+            apps/logger-service/dist/**
+            apps/kafka-service/dist/**
           retention-days: 1
-
+          if-no-files-found: error
 
   # ============================================================
   # DOCKER PUBLISH
