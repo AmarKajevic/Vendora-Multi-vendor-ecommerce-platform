@@ -811,6 +811,4 @@ GitHub: [AmarKajevic](https://github.com/AmarKajevic)
 
 ---
 
-## License
 
-This project is intended as a portfolio/demo application. Add the license you want to use for the repository if you plan to permit reuse or distribution.
