@@ -638,7 +638,7 @@ Screenshots are intentionally included as a visual overview of the three portals
 
 ![Vendora Customer Portal](docs/screenshots/user-home.png)
 
-![Product Details](docs/screenshots/product-details.png)
+![Product Details](docs/screenshots/user-products.png)
 
 ![Cart / Checkout](docs/screenshots/cart-checkout.png)
 
