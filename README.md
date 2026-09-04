@@ -636,8 +636,8 @@ Screenshots are intentionally included as a visual overview of the three portals
 
 ### Customer Portal
 <p align="center">
-  <img src="docs/screenshots/user-home.png" width="70%" alt="Vendora portal">
-  <img src="docs/screenshots/user-products.png" width="22%" alt="Vendora product">
+  <img src="docs/screenshots/user-home.png" width="50%" alt="Vendora portal">
+  <img src="docs/screenshots/user-products.png" width="50%" alt="Vendora product">
 </p>
 
 ![Cart / Checkout](docs/screenshots/cart-checkout.png)
