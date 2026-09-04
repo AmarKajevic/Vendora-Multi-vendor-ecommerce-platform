@@ -1,5 +1,7 @@
 # Vendora — Multi-Vendor E-Commerce Platform
 
+![Vendora multi-vendor](docs/screenshots/vendora-multi-vendor.png)
+
 ![Vendora](https://img.shields.io/badge/Vendora-Multi--Vendor%20E--Commerce-f97316?style=for-the-badge)
 ![Node.js](https://img.shields.io/badge/Node.js-24-339933?style=flat-square&logo=node.js&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white)
@@ -632,33 +634,46 @@ Frontend/API URLs
 
 Screenshots are intentionally included as a visual overview of the three portals and major workflows.
 
-> Create a `docs/screenshots/` directory and place your exported screenshots there. Then update the filenames below to match the actual files.
 
-### Customer Portal
+### User Portal
 <p align="center">
-  <img src="docs/screenshots/user-home.png" width="50%" alt="Vendora portal">
-  <img src="docs/screenshots/user-products.png" width="50%" alt="Vendora product">
+  <img src="docs/screenshots/user-home.png" width="70%" alt="User Home">
+  <img src="docs/screenshots/user-home-mobile.png" width="22%" alt="User home mobile">
 </p>
 
-![Cart / Checkout](docs/screenshots/cart-checkout.png)
+<p align="center">
+  <img src="docs/screenshots/user-products.png" width="70%" alt="Product Details">
+  <img src="docs/screenshots/user-products-mobile.png" width="22%" alt="Products mobile">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/checkout.png" width="48%" alt="Checkout">
+  <img src="docs/screenshots/order-details.png" width="48%" alt="Order details">
+</p>
+\
+<p align="center">
+  <img src="docs/screenshots/seller-page.png" width="48%" alt="Seller Page">
+  <img src="docs/screenshots/user-chat.png" width="48%" alt="User chat">
+</p>
+
+
 
 ### Seller Portal
 
-![Seller Dashboard](docs/screenshots/seller-dashboard.png)
+<p align="center">
+  <img src="docs/screenshots/create-product.png" width="48%" alt="Create Product">
+  <img src="docs/screenshots/seller-chat.png" width="48%" alt="Seller chat">
+</p>
 
-![Product Creation](docs/screenshots/product-create.png)
 
 ### Admin Portal
+<p align="center">
+  <img src="docs/screenshots/admin-dashboard.png" width="48%" alt="Create Product">
+  <img src="docs/screenshots/customization.png" width="48%" alt="Seller chat">
+</p>
 
 ![Admin Dashboard](docs/screenshots/admin-dashboard.png)
 
-### Real-Time Chat
-
-![Customer Seller Chat](docs/screenshots/chat.png)
-
-### Recommendations
-
-![Product Recommendations](docs/screenshots/recommendations.png)
 
 ---
 
@@ -796,6 +811,4 @@ GitHub: [AmarKajevic](https://github.com/AmarKajevic)
 
 ---
 
-## License
 
-This project is intended as a portfolio/demo application. Add the license you want to use for the repository if you plan to permit reuse or distribution.
