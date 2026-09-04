@@ -635,10 +635,10 @@ Screenshots are intentionally included as a visual overview of the three portals
 > Create a `docs/screenshots/` directory and place your exported screenshots there. Then update the filenames below to match the actual files.
 
 ### Customer Portal
-
-![Vendora Customer Portal](docs/screenshots/user-home.png)
-
-![Product Details](docs/screenshots/user-products.png)
+<p align="center">
+  <img src="docs/screenshots/user-home.png" width="70%" alt="Vendora portal">
+  <img src="docs/screenshots/user-products.png" width="22%" alt="Vendora product">
+</p>
 
 ![Cart / Checkout](docs/screenshots/cart-checkout.png)
 
