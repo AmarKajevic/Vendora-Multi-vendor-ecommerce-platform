@@ -51,6 +51,10 @@ COPY prisma ./prisma
 COPY apps/auth-service/dist \
      ./apps/auth-service/dist
 
+COPY apps/auth-service/src/utlis/email-templates \
+     ./apps/auth-service/src/utlis/email-templates
+     
+
 # ------------------------------------------------------------
 # Prisma Client
 # ------------------------------------------------------------
