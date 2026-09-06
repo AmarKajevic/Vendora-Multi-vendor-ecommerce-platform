@@ -1,251 +1,252 @@
-# Vendora — Multi-Vendor E-Commerce Platform
+# Vendora — Multi-Vendor E-Commerce Marketplace
 
-![Vendora multi-vendor](docs/screenshots/vendora-multi-vendor.png)
+<p align="center">
+  <img src="docs/screenshots/vendora-multi-vendor.png" alt="Vendora Multi-Vendor E-Commerce Platform" width="900"/>
+</p>
 
-![Vendora](https://img.shields.io/badge/Vendora-Multi--Vendor%20E--Commerce-f97316?style=for-the-badge)
-![Node.js](https://img.shields.io/badge/Node.js-24-339933?style=flat-square&logo=node.js&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)
-![Nx](https://img.shields.io/badge/Nx-Monorepo-143055?style=flat-square&logo=nx&logoColor=white)
-![Kafka](https://img.shields.io/badge/Apache%20Kafka-7.4.0-231F20?style=flat-square&logo=apachekafka&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=flat-square&logo=docker&logoColor=white)
-![Stripe](https://img.shields.io/badge/Stripe-Payments-635BFF?style=flat-square&logo=stripe&logoColor=white)
+<p align="center">
+  <strong>A full-stack multi-vendor marketplace built with Next.js, Node.js, Kafka, Redis, Stripe, TensorFlow.js, Docker and GitHub Actions.</strong>
+</p>
 
-> A production-oriented multi-vendor e-commerce platform built as an Nx monorepo with three portals, domain-oriented backend services, event-driven communication with Kafka, real-time messaging, recommendations powered by TensorFlow.js, Stripe payments, Redis, Docker, GitHub Actions and Docker Hub.
+<p align="center">
+  <a href="https://github.com/AmarKajevic/Vendora-Multi-vendor-ecommerce-platform">
+    <img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github" alt="GitHub"/>
+  </a>
+  <img src="https://img.shields.io/badge/Node.js-24-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"/>
+  <img src="https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js"/>
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"/>
+  <img src="https://img.shields.io/badge/Nx-Monorepo-143055?style=for-the-badge&logo=nx&logoColor=white" alt="Nx"/>
+  <img src="https://img.shields.io/badge/Kafka-Event--Driven-231F20?style=for-the-badge&logo=apachekafka&logoColor=white" alt="Kafka"/>
+  <img src="https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker"/>
+  <img src="https://img.shields.io/badge/Stripe-Payments-635BFF?style=for-the-badge&logo=stripe&logoColor=white" alt="Stripe"/>
+</p>
 
 ---
 
 ## Overview
 
-**Vendora** is a full-stack multi-vendor e-commerce platform designed around a marketplace model where customers, sellers and administrators have separate applications and workflows.
+**Vendora** is a full-stack multi-vendor e-commerce marketplace designed to model the core workflows of a real online marketplace rather than a simple CRUD shopping application.
 
-The system is organized as an **Nx monorepo** containing three frontend portals and a set of backend/domain services exposed through an **API Gateway**. The platform combines traditional request/response APIs with asynchronous event processing for analytics, chat persistence and logging.
+The platform provides **three dedicated portals** for different roles:
 
-The goal of the project was not only to build an e-commerce UI, but to implement a realistic backend architecture containing authentication, marketplace workflows, payments, messaging, analytics, recommendations, centralized routing, caching, observability and containerized deployment.
+* **User Portal** — shopping, cart, wishlist, checkout, orders, seller communication and recommendations
+* **Seller Portal** — shop management, product creation, product media and seller workflows
+* **Admin Portal** — user/seller management and platform customization
 
----
+Behind the portals, the platform uses **10 backend applications/services**, an API Gateway, Kafka-based asynchronous processing, Redis-backed real-time state, Stripe payments, TensorFlow.js recommendations and containerized deployment through Docker and GitHub Actions.
 
-## Why Vendora?
-
-Vendora models the core workflows of a real marketplace:
-
-- customers browse products, manage carts and wishlists, place orders and communicate with sellers;
-- sellers create and manage their shops and products;
-- administrators manage users, sellers and platform customization;
-- marketplace revenue is generated through an automatically calculated **admin/platform fee** on completed sales;
-- user behavior is collected as analytics events and used by a recommendation service;
-- real-time conversations allow customers to ask sellers product-related questions.
-
-There are **no hard-coded product/catalog records in the application flow**. The platform is designed around persisted application data and service-to-service communication.
+The project is structured as an **Nx monorepo with domain-oriented backend services and independent frontend applications**.
 
 ---
 
-## Architecture
+## Why I Built Vendora
+
+The goal was to build more than an e-commerce interface.
+
+Vendora was designed to demonstrate practical experience with:
+
+* service-oriented backend architecture
+* API Gateway patterns
+* authentication and authorization
+* asynchronous event-driven systems
+* real-time communication
+* distributed application state
+* marketplace payments
+* behavioral analytics
+* recommendation systems
+* containerization
+* CI/CD automation
+
+The project intentionally combines **synchronous request/response workflows** with **asynchronous event processing** so that different workloads can evolve independently.
+
+---
+
+# Architecture
 
 ```text
-                                      ┌──────────────────────┐
-                                      │      User Portal      │
-                                      │      Next.js 16       │
-                                      └──────────┬───────────┘
-                                                 │
-                                      ┌──────────▼───────────┐
-                                      │     Seller Portal     │
-                                      │      Next.js 16       │
-                                      └──────────┬───────────┘
-                                                 │
-                                      ┌──────────▼───────────┐
-                                      │      Admin Portal      │
-                                      │      Next.js 16        │
-                                      └──────────┬────────────┘
-                                                 │
-                                                 ▼
-                                      ┌───────────────────────┐
-                                      │        NGINX           │
-                                      │ Reverse Proxy / Entry │
-                                      └───────────┬───────────┘
-                                                  │
-                                                  ▼
-                                      ┌───────────────────────┐
-                                      │      API Gateway        │
-                                      │      Node.js / HTTP    │
-                                      └───────────┬────────────┘
-                                                  │
-                    ┌─────────────────────────────┼─────────────────────────────┐
-                    │             │               │              │              │
-                    ▼             ▼               ▼              ▼              ▼
-              ┌──────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
-              │   Auth   │ │  Products  │ │   Seller   │ │   Orders   │ │   Admin    │
-              │ Service  │ │  Service   │ │  Service   │ │  Service   │ │  Service   │
-              └──────────┘ └────────────┘ └────────────┘ └────────────┘ └────────────┘
-                    │             │              │             │
-                    │             │              │             │
-                    └─────────────┴──────────────┴─────────────┘
-                                            │
-                                            ▼
-                                   ┌────────────────┐
-                                   │      Kafka      │
-                                   │ Event Backbone  │
-                                   └───────┬────────┘
-                                           │
-                         ┌─────────────────┼──────────────────┐
-                         │                 │                  │
-                         ▼                 ▼                  ▼
-                  ┌────────────┐   ┌────────────┐    ┌───────────────┐
-                  │ Analytics  │   │   Logger   │    │ Chat Message  │
-                  │   Events   │   │   Events   │    │    Events     │
-                  └─────┬──────┘   └─────┬──────┘    └───────┬───────┘
-                        │                │                   │
-                        ▼                ▼                   ▼
-                 ┌─────────────┐  ┌─────────────┐   ┌──────────────┐
-                 │Recommendation│  │Logger Service│   │Chat Service  │
-                 │  TensorFlow  │  │   WebSocket  │   │ WebSocket +  │
-                 │              │  │   Clients    │   │ Redis + DB   │
-                 └─────────────┘  └─────────────┘   └──────────────┘
+                                  ┌──────────────────────┐
+                                  │      User Portal      │
+                                  │      Next.js 16       │
+                                  └──────────┬───────────┘
+                                             │
+                                  ┌──────────▼───────────┐
+                                  │     Seller Portal     │
+                                  │      Next.js 16       │
+                                  └──────────┬───────────┘
+                                             │
+                                  ┌──────────▼───────────┐
+                                  │      Admin Portal      │
+                                  │      Next.js 16        │
+                                  └──────────┬────────────┘
+                                             │
+                                             ▼
+                                  ┌───────────────────────┐
+                                  │         NGINX           │
+                                  │ Reverse Proxy / Entry   │
+                                  └───────────┬────────────┘
+                                              │
+                                              ▼
+                                  ┌───────────────────────┐
+                                  │      API Gateway       │
+                                  │      Node.js / HTTP    │
+                                  └───────────┬────────────┘
+                                              │
+                  ┌───────────────────────────┼────────────────────────────┐
+                  │            │              │              │             │
+                  ▼            ▼              ▼              ▼             ▼
+             ┌────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+             │  Auth  │  │ Products │  │  Seller  │  │  Orders  │  │  Admin   │
+             │ Service│  │ Service  │  │ Service  │  │ Service  │  │ Service  │
+             └────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
+                  │            │              │              │
+                  └────────────┴──────────────┴──────────────┘
+                                               │
+                                               ▼
+                                      ┌────────────────┐
+                                      │      Kafka      │
+                                      │  Event Backbone │
+                                      └───────┬────────┘
+                                              │
+                          ┌───────────────────┼────────────────────┐
+                          │                   │                    │
+                          ▼                   ▼                    ▼
+                    ┌────────────┐     ┌────────────┐      ┌──────────────┐
+                    │ Analytics  │     │   Logger   │      │ Chat Events  │
+                    │   Events   │     │   Events   │      │              │
+                    └─────┬──────┘     └─────┬──────┘      └──────┬───────┘
+                          │                  │                    │
+                          ▼                  ▼                    ▼
+                  Recommendation       Logger Service        Chat Service
+                    TensorFlow.js                              Redis + DB
 ```
 
-### Service boundaries
+### Detailed architecture
 
-| Component | Responsibility |
-|---|---|
-| `user-ui` | Customer-facing storefront and user workflows |
-| `seller-ui` | Seller dashboard, product/shop management and seller workflows |
-| `admin-ui` | User, seller, banner, logo and platform customization management |
-| `api-gateway` | Central entry point, routing and cross-cutting gateway concerns |
-| `auth-service` | Registration, login, OTP verification, JWT access/refresh authentication |
-| `products-service` | Product creation, catalog retrieval and product-related operations |
-| `seller-service` | Seller/shop profile management and marketplace seller workflows |
-| `order-service` | Checkout, order creation and Stripe payment integration |
-| `admin-service` | Administrative operations and platform management |
-| `chatting-service` | Real-time customer/seller messaging, Kafka-backed persistence and unread state |
-| `recommendation-service` | Recommendation generation from behavioral analytics using TensorFlow.js |
-| `logger-service` | Consumes log events and streams them to connected monitoring clients |
-| `kafka-service` | Kafka-related application functionality and event processing |
+[![Architecture](docs/ARCHITECTURE.png)](docs/ARCHITECTURE.png)
+
+See the full architectural documentation in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
 
-## Technology Stack
+# Core Features
 
-### Frontend
+## Customer Experience
 
-- **Next.js 16**
-- **React 19**
-- **TypeScript**
-- **Zustand** for client-side state management
-- Next/Image and image optimization
+* account registration
+* OTP verification
+* JWT access-token authentication
+* refresh-token authentication
+* product discovery
+* categories and subcategories
+* product variants such as sizes
+* cart management
+* wishlist management
+* checkout and orders
+* seller communication
+* personalized product recommendations
 
-### Backend
+## Seller Portal
 
-- **Node.js 24**
-- **TypeScript**
-- API Gateway architecture
-- REST APIs
-- WebSockets
-- **Socket.IO / WebSocket-based real-time communication**
+* shop creation and management
+* product creation
+* product descriptions and attributes
+* categories and subcategories
+* product variants
+* image uploads through ImageKit
+* seller-side marketplace workflows
+* Stripe seller onboarding
 
-### Authentication & Security
+## Admin Portal
 
-- JWT access tokens
-- Refresh tokens
-- OTP-based verification
-- Protected authenticated workflows
-- API gateway and middleware-based request handling
-- Rate limiting and CORS handling where applicable
-
-### Data & Infrastructure
-
-- **MongoDB** / Prisma-based application data access
-- **Redis** for ephemeral state and counters
-- **Apache Kafka** for asynchronous events
-- **Zookeeper** for the Kafka deployment used by the project
-
-### Payments & Media
-
-- **Stripe** for checkout and payment processing
-- Stripe-connected seller profiles/accounts
-- Automatic marketplace/admin fee calculation
-- **ImageKit** for product and shop images
-- **EJS** templates for transactional emails
-
-### Machine Learning
-
-- **TensorFlow.js for Node.js**
-- Behavioral analytics pipeline for recommendation generation
-
-### DevOps
-
-- **Nx monorepo**
-- **pnpm workspaces**
-- Docker
-- Docker Compose
-- Docker Hub
-- GitHub Actions
-- Nginx
+* users management
+* sellers management
+* banners
+* logos
+* visual customization
+* platform-level configuration
 
 ---
 
-## Core Features
+# Engineering Highlights
 
-### Customer Portal
+## 1. Domain-Oriented Backend Architecture
 
-The customer-facing application provides the main shopping experience:
+The backend is split into focused applications with explicit responsibilities:
 
-- registration and account creation;
-- OTP verification;
-- login/logout and refresh-token authentication;
-- product browsing and product details;
-- categories and subcategories;
-- product variants such as sizes;
-- cart management;
-- wishlist management;
-- checkout and payment;
-- order workflows;
-- seller communication through real-time chat;
-- personalized/recommended products based on behavioral events.
-
-### Seller Portal
-
-Sellers have a dedicated management portal where they can:
-
-- create and manage a seller/shop profile;
-- create products with descriptions and attributes;
-- configure sizes, categories and subcategories;
-- upload product images through ImageKit;
-- manage seller-side marketplace operations;
-- create/connect a Stripe seller profile for payments.
-
-### Admin Portal
-
-Administrators have centralized platform management capabilities for:
-
-- users;
-- sellers;
-- banners;
-- logos;
-- visual/customization settings;
-- platform-level administration.
+| Service                  | Responsibility                                        |
+| ------------------------ | ----------------------------------------------------- |
+| `api-gateway`            | Central entry point and service routing               |
+| `auth-service`           | Registration, login, OTP, JWT and refresh-token flows |
+| `products-service`       | Product creation and catalog operations               |
+| `seller-service`         | Seller and shop workflows                             |
+| `order-service`          | Checkout, orders and Stripe payment logic             |
+| `admin-service`          | Platform administration                               |
+| `chatting-service`       | Real-time messaging and async persistence             |
+| `recommendation-service` | Recommendation generation                             |
+| `logger-service`         | Kafka-driven logging and live event streaming         |
+| `kafka-service`          | Kafka-related event processing                        |
 
 ---
 
-## Authentication Flow
+# 2. API Gateway
 
-Vendora uses a token-based authentication model with **JWT access tokens, refresh tokens and OTP verification**.
+All three portals communicate through a centralized API Gateway.
 
-High-level flow:
+```text
+User / Seller / Admin
+          │
+          ▼
+        NGINX
+          │
+          ▼
+     API Gateway
+          │
+          ├── Auth Service
+          ├── Products Service
+          ├── Seller Service
+          ├── Order Service
+          └── Admin Service
+```
+
+The gateway centralizes:
+
+* request routing
+* service entry points
+* cross-cutting middleware
+* rate limiting
+* CORS handling
+* authentication-related gateway concerns
+
+---
+
+# 3. Authentication & Security
+
+Vendora uses:
+
+* JWT access tokens
+* refresh tokens
+* OTP verification
+* protected authenticated routes
+* role-specific application access
+* rate limiting
+* CORS protection
+
+### Authentication flow
 
 ```text
 User Registration
        │
        ▼
-Create Account
+ Create Account
        │
        ▼
-OTP Generated
+  Generate OTP
        │
        ▼
-EJS Email Template
+   EJS Email
        │
        ▼
-User Verifies OTP
+ Verify OTP
        │
        ▼
 Authenticated Session
@@ -254,23 +255,21 @@ Authenticated Session
        └── Refresh Token
 ```
 
-The same architecture is used to protect authenticated customer, seller and administrator workflows while keeping authentication logic centralized inside the auth service.
-
 ---
 
-## Event-Driven Architecture with Kafka
+# 4. Event-Driven Architecture with Kafka
 
-Kafka is used where asynchronous processing is a better fit than coupling the user request directly to every downstream operation.
+Kafka is used for workloads that should not block the main user request.
 
-Examples of application events include:
+Examples include:
 
-- product views;
-- add-to-cart actions;
-- wishlist actions;
-- application logs;
-- chat messages.
+* product views
+* add-to-cart events
+* wishlist events
+* application logs
+* chat messages
 
-A simplified analytics flow looks like this:
+### Analytics flow
 
 ```text
 User Action
@@ -279,13 +278,13 @@ User Action
 Application Service
     │
     ▼
-Kafka Event
+ Kafka Event
     │
     ▼
 Analytics Consumer
     │
     ▼
-Stored Behavioral Data
+Behavioral Data
     │
     ▼
 Recommendation Service
@@ -294,17 +293,47 @@ Recommendation Service
 Recommended Products
 ```
 
-This decouples event producers from consumers and allows analytics, recommendation and logging workloads to evolve independently from the synchronous request path.
+---
+
+# 5. Real-Time Chat
+
+The platform includes customer-to-seller real-time messaging.
+
+```text
+WebSocket
+   │
+   ├── Real-time message delivery
+   │
+   └── Kafka event
+          │
+          ▼
+    Chat Consumer
+          │
+          ▼
+      Batch DB Write
+          │
+          ▼
+       Persistent Data
+```
+
+Redis is used for:
+
+* online presence
+* unseen message counters
+
+The real-time path is separated from durable persistence so WebSocket delivery does not depend on a synchronous database write for every incoming message.
 
 ---
 
-## Recommendation System
+# 6. Recommendation System
 
-Vendora includes a recommendation service built around **TensorFlow.js for Node.js**.
+Vendora includes a recommendation service built with **TensorFlow.js for Node.js**.
 
-The recommendation pipeline is based on behavioral signals captured from user activity such as product views, cart actions and wishlist interactions.
+Behavioral signals include:
 
-Conceptually:
+* product views
+* cart actions
+* wishlist interactions
 
 ```text
 Product View
@@ -315,98 +344,28 @@ Wishlist
    Kafka
      │
      ▼
- Analytics Data
+Analytics Data
      │
      ▼
- Recommendation Service
+Recommendation Service
      │
      ▼
- TensorFlow.js Model
+TensorFlow.js
      │
      ▼
- Recommended Products
+Recommended Products
 ```
-
-The important architectural idea is that recommendation generation is separated from the main product/order request path instead of embedding model logic directly into the storefront or product service.
 
 ---
 
-## Real-Time Chat Architecture
+# 7. Marketplace Payments with Stripe
 
-Vendora provides customer-to-seller messaging for product questions and communication.
+Stripe is used for:
 
-The chat service is designed around three concerns:
-
-1. **Real-time delivery** through WebSocket connections.
-2. **Asynchronous persistence** through Kafka.
-3. **Ephemeral online/unread state** through Redis and in-memory connection tracking.
-
-Simplified flow:
-
-```text
-Customer
-   │
-   │ WebSocket
-   ▼
-Chat Service
-   │
-   ├──────────────► Seller WebSocket
-   │
-   └──────────────► Kafka: chat.new_message
-                         │
-                         ▼
-                   Chat Consumer
-                         │
-                         ▼
-                       Prisma
-                         │
-                         ▼
-                       Database
-
-Redis
-  ├── online state
-  └── unseen message counters
-```
-
-Messages are first delivered in real time. The chat service then publishes a `chat.new_message` event to Kafka. A dedicated consumer buffers incoming messages and periodically performs a batch `createMany` database write. Unread state is updated only after the database write succeeds.
-
-This separates the latency-sensitive real-time path from durable message persistence and reduces unnecessary one-row-at-a-time database writes under message bursts.
-
----
-
-## Logging & Live Monitoring
-
-The logger service consumes log events from Kafka and processes them in batches before broadcasting them to connected monitoring clients.
-
-```text
-Application Event
-      │
-      ▼
-    Kafka
-      │
-      ▼
- Logger Consumer
-      │
-      ▼
- In-Memory Queue
-      │
-  batch interval
-      │
-      ▼
-WebSocket Clients
-```
-
-This gives the system an asynchronous logging pipeline and makes it possible to observe runtime events without forcing every service to synchronously communicate with a central logging endpoint.
-
----
-
-## Marketplace Payments & Platform Revenue
-
-Vendora uses **Stripe** for payment processing.
-
-Sellers can create/connect a Stripe profile as part of the seller onboarding workflow. For each order, the platform automatically calculates the configured **admin/platform fee** so that Vendora itself can operate as a marketplace business model rather than simply acting as a storefront.
-
-High-level flow:
+* customer payments
+* seller Stripe onboarding
+* marketplace payment processing
+* platform/admin fee calculation
 
 ```text
 Customer
@@ -420,43 +379,108 @@ Stripe Payment
    ▼
 Order Service
    │
-   ├── Seller amount
-   └── Platform/Admin fee
+   ├── Seller Amount
+   └── Platform Fee
 ```
 
 ---
 
-## Image Management
+# 8. Logging & Event Monitoring
 
-Product and shop images are handled through **ImageKit** rather than being stored directly inside the application repository.
+Application events are published to Kafka and consumed by the logger service.
 
-This keeps image assets outside the application codebase and allows image delivery and transformations to be handled by a dedicated media platform.
-
----
-
-## Transactional Emails
-
-The platform uses **EJS templates** for transactional emails such as:
-
-- OTP verification;
-- registration-related messages;
-- order-related notifications.
-
-Email generation is separated from the frontend so that transactional communication remains part of the backend workflow.
-
----
-
-## State Management
-
-The frontend uses **Zustand** for client-side state management.
-
-Server-backed data remains persisted in the backend/database layer; Zustand is used for application state on the client rather than treating the browser store as the source of truth.
+```text
+Application
+    │
+    ▼
+  Kafka
+    │
+    ▼
+Logger Consumer
+    │
+    ▼
+In-Memory Queue
+    │
+    ▼
+WebSocket Clients
+```
 
 ---
 
-## Monorepo Structure
+# 9. Image & Email Infrastructure
 
-A simplified project structure:
+### Image Management
+
+Product and shop media are handled through **ImageKit**, keeping image storage and transformation concerns outside the application repository.
+
+### Transactional Emails
+
+The backend uses **EJS templates** for emails such as:
+
+* OTP verification
+* registration-related messages
+* order notifications
+
+---
+
+# Technology Stack
+
+## Frontend
+
+* Next.js 16
+* React 19
+* TypeScript
+* Zustand
+* Next/Image
+
+## Backend
+
+* Node.js 24
+* TypeScript
+* Express
+* REST APIs
+* WebSockets / Socket.IO
+* API Gateway
+
+## Data & Messaging
+
+* MongoDB
+* Prisma
+* Redis
+* Apache Kafka
+* Zookeeper
+
+## Authentication & Security
+
+* JWT
+* Refresh Tokens
+* OTP Verification
+* CORS
+* Rate Limiting
+
+## Payments & Media
+
+* Stripe
+* ImageKit
+* EJS
+
+## Machine Learning
+
+* TensorFlow.js
+
+## Infrastructure & DevOps
+
+* Nx
+* pnpm
+* Docker
+* Docker Compose
+* Nginx
+* Docker Hub
+* GitHub Actions
+
+---
+
+# Monorepo Structure
 
 ```text
 Vendora/
@@ -499,316 +523,291 @@ Vendora/
 
 ---
 
-## CI/CD Pipeline
+# CI/CD
 
-The project uses **GitHub Actions** to automatically build the monorepo and publish production Docker images to Docker Hub whenever changes are pushed to `main`.
+Vendora uses **GitHub Actions** to automate monorepo builds and Docker image publishing.
+
+### Pipeline
 
 ```text
 Git Push
-   │
-   ▼
+    │
+    ▼
 GitHub Actions
-   │
-   ├── Install pnpm dependencies
-   ├── Nx build
-   ├── Verify backend dist outputs
-   ├── Package backend build artifacts
-   │
-   ▼
+    │
+    ├── Install pnpm dependencies
+    ├── Nx verification
+    ├── Build applications
+    ├── Verify backend artifacts
+    ├── Package build outputs
+    │
+    ▼
 Docker Build Matrix
-   │
-   ├── Build backend images
-   ├── Build frontend images
-   ├── Docker layer cache
-   │
-   ▼
+    │
+    ├── Backend images
+    ├── Frontend images
+    └── Layer caching
+    │
+    ▼
 Docker Hub
-   │
-   ├── latest
-   └── <short commit SHA>
-```
-
-The repository publishes the following application images:
-
-```text
-amar997/vendora-api-gateway
-amar997/vendora-auth-service
-amar997/vendora-products-service
-amar997/vendora-seller-service
-amar997/vendora-order-service
-amar997/vendora-admin-service
-amar997/vendora-chatting-service
-amar997/vendora-recommendation-service
-amar997/vendora-logger-service
-amar997/vendora-kafka-service
-amar997/vendora-user-ui
-amar997/vendora-seller-ui
-amar997/vendora-admin-ui
+    │
+    ├── latest
+    └── commit SHA
 ```
 
 ---
 
-## Dockerized Production Stack
+# Dockerized Deployment
 
-The production compose configuration runs the platform from published Docker Hub images.
-
-Infrastructure includes:
-
-- Nginx
-- API Gateway
-- authentication and domain services
-- three frontend applications
-- Kafka
-- Zookeeper
-- Redis/integration services used by the application
-
-Start the production stack with:
+The production stack is started through Docker Compose using published Docker Hub images.
 
 ```bash
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Check container health/status:
+Check running containers:
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
 ```
 
-The application is exposed through Nginx on:
+The stack includes:
 
-```text
-http://localhost
-```
+* Nginx
+* API Gateway
+* backend services
+* User UI
+* Seller UI
+* Admin UI
+* Kafka
+* Zookeeper
+* Redis
 
 ---
 
-## Local Development
+# Local Development
 
-Install dependencies:
+## Requirements
+
+* Node.js 24+
+* pnpm
+* Docker
+* Docker Compose
+
+External integrations may also require:
+
+* MongoDB
+* Redis
+* Kafka
+* Stripe
+* ImageKit
+* SMTP configuration
+
+## Installation
 
 ```bash
 pnpm install
 ```
 
-Run the workspace development targets:
+## Start development
 
 ```bash
 pnpm dev
 ```
 
-Build the applications:
+## Build
 
 ```bash
 pnpm build
 ```
 
-The repository is managed as a pnpm workspace and Nx monorepo, allowing applications and shared packages to live in one codebase while maintaining independent service boundaries.
-
-> Some integrations require environment variables and external services such as MongoDB, Redis, Kafka, Stripe, ImageKit and email configuration. Use your own local environment configuration for those dependencies.
-
 ---
 
-## Environment Configuration
+# Environment Variables
 
-The project relies on environment variables for infrastructure and third-party integrations.
+Create the required environment variables before running the application locally.
 
-Typical configuration categories include:
+Example:
 
-```text
-Database
-JWT / refresh-token secrets
-OTP / email settings
-Redis
-Kafka
-Stripe
-ImageKit
-Frontend/API URLs
+```env
+DATABASE_URL=
+REDIS_DATABASE_URL=
+
+SMTP_USER=
+SMTP_PASS=
+SMTP_PORT=
+SMTP_SERVICE=gmail
+SMTP_HOST=smtp.gmail.com
+
+ACCESS_TOKEN_SECRET=
+REFRESH_TOKEN_SECRET=
+
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+IMAGEKIT_SECRET_KEY=
+IMAGEKIT_PUBLIC_KEY=
+
+KAFKA_API_KEY=
+KAFKA_API_SECRET=
+
+DOCKER_USERNAME=
 ```
 
-**Never commit real secrets, API keys or production credentials to GitHub.** Use GitHub Secrets for CI/CD credentials and local `.env` files for local development.
+### Environment variable reference
 
----
-
-## Screenshots
-
-Screenshots are intentionally included as a visual overview of the three portals and major workflows.
-
-
-### User Portal
-<p align="center">
-  <img src="docs/screenshots/user-home.png" width="70%" alt="User Home">
-  <img src="docs/screenshots/user-home-mobile.png" width="22%" alt="User home mobile">
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/user-products.png" width="70%" alt="Product Details">
-  <img src="docs/screenshots/user-products-mobile.png" width="22%" alt="Products mobile">
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/checkout.png" width="48%" alt="Checkout">
-  <img src="docs/screenshots/order-details.png" width="48%" alt="Order details">
-</p>
-\
-<p align="center">
-  <img src="docs/screenshots/seller-page.png" width="48%" alt="Seller Page">
-  <img src="docs/screenshots/user-chat.png" width="48%" alt="User chat">
-</p>
-
-
-
-### Seller Portal
-
-<p align="center">
-  <img src="docs/screenshots/create-product.png" width="48%" alt="Create Product">
-  <img src="docs/screenshots/seller-chat.png" width="48%" alt="Seller chat">
-</p>
-
-
-### Admin Portal
-<p align="center">
-  <img src="docs/screenshots/admin-dashboard.png" width="48%" alt="Create Product">
-  <img src="docs/screenshots/customization.png" width="48%" alt="Seller chat">
-</p>
-
-![Admin Dashboard](docs/screenshots/admin-dashboard.png)
+| Variable                | Purpose                            |
+| ----------------------- | ---------------------------------- |
+| `DATABASE_URL`          | Database connection string         |
+| `REDIS_DATABASE_URL`    | Redis connection string            |
+| `SMTP_USER`             | SMTP account username              |
+| `SMTP_PASS`             | SMTP account password/app password |
+| `SMTP_PORT`             | SMTP server port                   |
+| `SMTP_SERVICE`          | SMTP provider                      |
+| `SMTP_HOST`             | SMTP server hostname               |
+| `ACCESS_TOKEN_SECRET`   | JWT access-token signing secret    |
+| `REFRESH_TOKEN_SECRET`  | Refresh-token signing secret       |
+| `STRIPE_SECRET_KEY`     | Stripe server-side API key         |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret      |
+| `IMAGEKIT_SECRET_KEY`   | ImageKit server-side secret        |
+| `IMAGEKIT_PUBLIC_KEY`   | ImageKit public key                |
+| `KAFKA_API_KEY`         | Kafka authentication key           |
+| `KAFKA_API_SECRET`      | Kafka authentication secret        |
+| `DOCKER_USERNAME`       | Docker Hub username                |
 
 
 ---
 
-## Project Documentation
+# Screenshots
 
-Additional architecture documentation can be placed under `docs/`:
+## Customer Portal
 
-```text
-docs/
-├── ARCHITECTURE.md
-├── ARCHITECTURE.png
-└── screenshots/
-    ├── user-home.png
-    ├── product-details.png
-    ├── cart-checkout.png
-    ├── seller-dashboard.png
-    ├── product-create.png
-    ├── admin-dashboard.png
-    ├── chat.png
-    └── recommendations.png
-```
+<p align="center">
+  <img src="docs/screenshots/user-home.png" width="48%" alt="Vendora User Home">
+  <img src="docs/screenshots/product-details.png" width="48%" alt="Vendora Product Details">
+</p>
 
----
+<p align="center">
+  <img src="docs/screenshots/cart-checkout.png" width="48%" alt="Vendora Cart and Checkout">
+  <img src="docs/screenshots/chat.png" width="48%" alt="Vendora Chat">
+</p>
 
-## Engineering Highlights
+<p align="center">
+  <img src="docs/screenshots/recommendations.png" width="48%" alt="Vendora Recommendations">
+  <img src="docs/screenshots/seller-page.png" width="48%" alt="Vendora Seller Page">
+</p>
 
-Vendora was built to demonstrate practical backend and full-stack engineering rather than only UI implementation.
+## Seller Portal
 
-The project demonstrates:
+<p align="center">
+  <img src="docs/screenshots/seller-dashboard.png" width="48%" alt="Vendora Seller Dashboard">
+  <img src="docs/screenshots/product-create.png" width="48%" alt="Vendora Product Creation">
+</p>
 
-- monorepo architecture with Nx and pnpm;
-- domain-oriented Node.js services;
-- centralized API Gateway routing;
-- JWT + refresh-token authentication;
-- OTP verification;
-- role-specific user, seller and admin applications;
-- Kafka-based event-driven processing;
-- behavioral analytics;
-- TensorFlow.js recommendation logic;
-- real-time WebSocket communication;
-- Redis-backed online/unread state;
-- asynchronous/batched chat persistence;
-- Kafka-driven logging;
-- Stripe payment processing;
-- marketplace/admin fee calculation;
-- ImageKit media management;
-- EJS transactional email templates;
-- Dockerized services and frontend applications;
-- Docker Compose production stack;
-- GitHub Actions CI/CD;
-- Docker Hub image publishing;
-- cache-aware monorepo builds.
+## Admin Portal
+
+<p align="center">
+  <img src="docs/screenshots/admin-dashboard.png" width="48%" alt="Vendora Admin Dashboard">
+  <img src="docs/screenshots/customization.png" width="48%" alt="Vendora Admin Customization">
+</p>
 
 ---
 
-## Architectural Decisions
+# Key Engineering Decisions
 
 ### Why an API Gateway?
 
-The gateway gives the three frontend applications a centralized entry point and keeps service addresses and routing concerns out of the client applications.
+To provide a single entry point for all three frontend applications and isolate internal service addresses from the clients.
 
 ### Why Kafka?
 
-Kafka is used for workloads that do not need to block the original HTTP/WebSocket request, such as analytics, logging and durable chat persistence.
+To move non-blocking workloads such as analytics, logging and chat persistence out of latency-sensitive request paths.
 
 ### Why Redis?
 
-Redis is appropriate for short-lived application state such as online presence and unseen message counters, where extremely fast reads/writes are more important than relational durability.
+For fast, short-lived state such as online presence and unseen message counters.
 
-### Why separate the chat write path?
+### Why asynchronous chat persistence?
 
-The real-time path should stay responsive even when database persistence experiences temporary load. Publishing messages to Kafka and batching database inserts provides a buffer between message delivery and persistence.
+To keep WebSocket delivery responsive while Kafka buffers messages before batch persistence.
 
-### Why an Nx monorepo?
+### Why Nx?
 
-The monorepo keeps shared packages, frontend applications and backend services in one versioned codebase while Nx provides project graph awareness, build orchestration and caching.
+To maintain a single versioned codebase for frontend applications, backend services and shared packages while benefiting from project graph management, build orchestration and caching.
 
----
-
-## Current Docker / Production Verification
-
-The production compose stack has been verified locally using published Docker Hub images.
-
-The verified stack includes:
-
-- 3 frontend containers;
-- 10 application/backend service containers;
-- Nginx;
-- Kafka;
-- Zookeeper.
-
-This confirms that the same images published by the CI pipeline can be pulled and started through the production compose configuration.
+More detailed architectural decisions are documented in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---
 
-## What This Project Demonstrates
+# What This Project Demonstrates
 
-Vendora is intended as a portfolio project demonstrating the ability to work across the full application lifecycle:
+Vendora demonstrates the ability to work across the full application lifecycle:
 
 ```text
-Frontend
-   ↓
-API Gateway
-   ↓
-Domain Services
-   ↓
-Database / Redis
-   ↓
-Kafka Events
-   ↓
-Async Consumers
-   ↓
-Recommendations / Logging / Persistence
-   ↓
-Docker
-   ↓
-GitHub Actions
-   ↓
-Docker Hub
-   ↓
-Production Compose
+Frontend Applications
+        │
+        ▼
+      Nginx
+        │
+        ▼
+   API Gateway
+        │
+        ▼
+ Domain Services
+        │
+        ├──────────────► MongoDB / Prisma
+        │
+        ├──────────────► Redis
+        │
+        └──────────────► Kafka
+                              │
+                              ▼
+                      Async Consumers
+                              │
+                 ┌────────────┼─────────────┐
+                 ▼            ▼             ▼
+          Recommendations   Logging    Chat Persistence
+                 │            │             │
+                 └────────────┴─────────────┘
+                              │
+                              ▼
+                            Docker
+                              │
+                              ▼
+                        GitHub Actions
+                              │
+                              ▼
+                          Docker Hub
+                              │
+                              ▼
+                      Docker Compose
 ```
 
-The project is deliberately broader than a standard CRUD e-commerce application and focuses on service boundaries, asynchronous processing, real-time communication and deployment automation.
+The project goes beyond a standard CRUD e-commerce implementation by combining:
+
+**marketplace workflows + distributed backend services + event-driven processing + real-time communication + recommendations + payments + containerized deployment.**
 
 ---
 
-## Author
+# Documentation
+
+* [Architecture Documentation](ARCHITECTURE.md)
+* [Architecture Diagram](docs/ARCHITECTURE.png)
+* [GitHub Repository](https://github.com/AmarKajevic/Vendora-Multi-vendor-ecommerce-platform)
+
+---
+
+# Author
 
 **Amar Kajevic**
 
-Full-Stack Developer focused on **Node.js, React, Next.js and scalable backend architecture**.
+Full-Stack Developer focused on:
 
-GitHub: [AmarKajevic](https://github.com/AmarKajevic)
+**Node.js · React · Next.js · TypeScript · Backend Architecture**
+
+[GitHub](https://github.com/AmarKajevic)
 
 ---
 
-
+> Vendora was built as a portfolio project to demonstrate practical full-stack engineering, backend architecture, asynchronous systems, real-time communication and deployment automation.
