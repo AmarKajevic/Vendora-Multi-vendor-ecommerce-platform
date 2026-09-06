@@ -798,7 +798,7 @@ The project goes beyond a standard CRUD e-commerce implementation by combining:
 # Documentation
 
 * [Architecture Documentation](ARCHITECTURE.md)
-* [Architecture Diagram](docs/ARCHITECTURE.png)
+* [Architecture Diagram](docs/Architecture.png)
 * [GitHub Repository](https://github.com/AmarKajevic/Vendora-Multi-vendor-ecommerce-platform)
 
 ---
