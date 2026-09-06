@@ -696,7 +696,7 @@ DOCKER_USERNAME=
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/recommendations.png" width="48%" alt="Vendora Recommendations">
+  <img src="docs/screenshots/order-details.png" width="48%" alt="Vendora order-details">
   <img src="docs/screenshots/seller-page.png" width="48%" alt="Vendora Seller Page">
 </p>
 
@@ -704,7 +704,10 @@ DOCKER_USERNAME=
 
 <p align="center">
   <img src="docs/screenshots/seller-page.png" width="48%" alt="Vendora Seller Dashboard">
-  <img src="docs/screenshots/seller-chat.png" width="48%" alt="Vendora Product Creation">
+  <img src="docs/screenshots/seller-chat.png" width="48%" alt="Vendora seller chat">
+</p>
+<p align="center">
+  <img src="docs/screenshots/create-product.png" width="88%" alt="Vendora create product">
 </p>
 
 ## Admin Portal
