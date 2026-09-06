@@ -149,8 +149,10 @@ See the full architectural documentation in [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
 * shop creation and management
 * product creation
+* offer creation
 * product descriptions and attributes
 * categories and subcategories
+* orders management
 * product variants
 * image uploads through ImageKit
 * seller-side marketplace workflows
@@ -685,12 +687,12 @@ DOCKER_USERNAME=
 
 <p align="center">
   <img src="docs/screenshots/user-home.png" width="48%" alt="Vendora User Home">
-  <img src="docs/screenshots/product-details.png" width="48%" alt="Vendora Product Details">
+  <img src="docs/screenshots/user-products.png" width="48%" alt="Vendora Product Details">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/cart-checkout.png" width="48%" alt="Vendora Cart and Checkout">
-  <img src="docs/screenshots/chat.png" width="48%" alt="Vendora Chat">
+  <img src="docs/screenshots/checkout.png" width="48%" alt="Vendora Cart and Checkout">
+  <img src="docs/screenshots/user-chat.png" width="48%" alt="Vendora Chat">
 </p>
 
 <p align="center">
@@ -701,8 +703,8 @@ DOCKER_USERNAME=
 ## Seller Portal
 
 <p align="center">
-  <img src="docs/screenshots/seller-dashboard.png" width="48%" alt="Vendora Seller Dashboard">
-  <img src="docs/screenshots/product-create.png" width="48%" alt="Vendora Product Creation">
+  <img src="docs/screenshots/seller-page.png" width="48%" alt="Vendora Seller Dashboard">
+  <img src="docs/screenshots/seller-chat.png" width="48%" alt="Vendora Product Creation">
 </p>
 
 ## Admin Portal
