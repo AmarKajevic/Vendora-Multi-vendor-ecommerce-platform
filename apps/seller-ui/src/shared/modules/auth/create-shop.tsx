@@ -1,14 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
 import { shopCategories } from "apps/seller-ui/src/utils/categories";
-import axios from "axios";
+import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
 import React from "react";
 import { useForm } from "react-hook-form";
 
 const CreateShop = ({
-  sellerId,
   setActiveStep,
 }: {
-  sellerId: string;
   setActiveStep: (step: number) => void;
 }) => {
   const {
@@ -19,10 +17,7 @@ const CreateShop = ({
 
   const shopCreateMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/api/create-shop`,
-        data,
-      );
+      const response = await axiosInstance.post("/api/create-shop", data);
       return response.data;
     },
 
@@ -32,9 +27,7 @@ const CreateShop = ({
   });
 
   const onSubmit = async (data: any) => {
-    const shopData = { ...data, sellerId };
-
-    shopCreateMutation.mutate(shopData);
+    shopCreateMutation.mutate(data);
   };
 
   const countWords = (text: string) => text.trim().split(/\s+/).length;

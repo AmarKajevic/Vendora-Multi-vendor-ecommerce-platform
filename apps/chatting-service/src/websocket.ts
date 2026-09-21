@@ -2,6 +2,7 @@ import redis from "@packages/libs/redis";
 import {Server as HttpServer} from "http";
 import { kafka } from "@packages/utils/kafka";
 import {WebSocketServer, WebSocket} from "ws";
+import jwt from "jsonwebtoken";
 
 
 const producer = kafka.producer();
@@ -31,10 +32,21 @@ export async function createWebSocketServer(server: HttpServer) {
         ws.on("message", async(rawMessage) => {
             try {
                 const messageStr = rawMessage.toString();
-                //register user on the first plain message(non-json)
-
+                //register connection on the first message: a short-lived JWT (from /api/ws-token), not a raw claimed id
                 if(!registeredUserId && !messageStr.startsWith("{")){
-                    registeredUserId = messageStr;
+                    let decoded: { id: string; role: string };
+                    try {
+                        decoded = jwt.verify(
+                            messageStr,
+                            process.env.ACCESS_TOKEN_SECRET as string,
+                        ) as { id: string; role: string };
+                    } catch (err) {
+                        console.warn("WebSocket auth failed:", (err as Error).message);
+                        ws.close(4001, "Unauthorized");
+                        return;
+                    }
+
+                    registeredUserId = decoded.role === "seller" ? `seller_${decoded.id}` : `user_${decoded.id}`;
                     connectedUsers.set(registeredUserId, ws)
                     console.log(`register websocket for userId: ${registeredUserId}`)
 
@@ -150,7 +162,7 @@ export async function createWebSocketServer(server: HttpServer) {
 
                 const isSeller = registeredUserId.startsWith("seller_")
                 const redisKey = isSeller
-                ? `online:seller:${registeredUserId.replace("seller","")}`
+                ? `online:seller:${registeredUserId.replace("seller_","")}`
                 : `online:user:${registeredUserId}`
 
                 await redis.del(redisKey)

@@ -1,5 +1,5 @@
 import express, { Router } from "express";
-import { addUserAddress, createShop, createStripeConnectLink, deleteUserAddress, getLayoutData, getSeller, getSellerDetails, getUser, getUserAddresses, loggedInAdmin, LoginAdmin, loginSeller, loginUser, logOutUser, refreshToken, registerSeller, resetUserPassword, updateUserPassword, userForgotPassword, userRegistration, verifySeller, verifyUser, verifyUserForgotPassword } from "../controller/auth.controller";
+import { addUserAddress, createShop, createStripeConnectLink, deleteUserAddress, getLayoutData, getSeller, getSellerDetails, getUser, getUserAddresses, getWebSocketToken, loggedInAdmin, LoginAdmin, loginSeller, loginUser, logOutUser, refreshToken, registerSeller, resetUserPassword, updateUserPassword, userForgotPassword, userRegistration, verifySeller, verifyUser, verifyUserForgotPassword } from "../controller/auth.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin, isSeller } from "@packages/middleware/authorizeRoles";
 
@@ -13,12 +13,13 @@ router.get("/logout-user", isAuthenticated, logOutUser);
 router.post("/forgot-password-user", userForgotPassword);
 router.post("/refresh-token", refreshToken);
 router.get("/logged-in-user", isAuthenticated, getUser);
+router.get("/ws-token", isAuthenticated, getWebSocketToken);
 router.post("/reset-password-user", resetUserPassword);
 router.post("/verify-forgot-password-user", verifyUserForgotPassword);
 router.post("/seller-registration", registerSeller);
 router.post("/verify-seller", verifySeller);
-router.post("/create-shop", createShop);
-router.post("/create-stripe-link", createStripeConnectLink);
+router.post("/create-shop", isAuthenticated, isSeller, createShop);
+router.post("/create-stripe-link", isAuthenticated, isSeller, createStripeConnectLink);
 router.post("/login-seller" , loginSeller)
 router.get("/logged-in-seller",isAuthenticated,isSeller, getSeller)
 router.get("/get-seller/:id", getSellerDetails)

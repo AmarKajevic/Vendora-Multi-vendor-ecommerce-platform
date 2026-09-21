@@ -20,6 +20,7 @@ import jwt, { JsonWebTokenError } from "jsonwebtoken";
 import { setCookie } from "../utlis/cookies/setCookie";
 import Stripe from "stripe";
 import { sendLog } from "@packages/utils/logs/send-logs";
+import redis from "@packages/libs/redis";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-03-25.dahlia",
@@ -170,7 +171,7 @@ export const refreshToken = async (
     ) as { id: string; role: string };
 
     if (!decoded || !decoded.id || !decoded.role) {
-      return new JsonWebTokenError("Forbidden! Invalid refresh token.");
+      return next(new JsonWebTokenError("Forbidden! Invalid refresh token."));
     }
 
     let account;
@@ -184,7 +185,7 @@ export const refreshToken = async (
     }
 
     if (!account) {
-      return new AuthError("Forbidden! User/seller not found!");
+      return next(new AuthError("Forbidden! User/seller not found!"));
     }
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: decoded.role },
@@ -200,6 +201,31 @@ export const refreshToken = async (
     return res.status(201).json({ success: true });
   } catch (error) {
     return next(error);
+  }
+};
+
+//issue a short-lived token the client can use to authenticate the chat WebSocket connection
+export const getWebSocketToken = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = req.user?.id || req.seller?.id;
+    const role = req.role;
+    if (!id || !role) {
+      return next(new AuthError("Unauthorized"));
+    }
+
+    const wsToken = jwt.sign(
+      { id, role },
+      process.env.ACCESS_TOKEN_SECRET as string,
+      { expiresIn: "60s" },
+    );
+
+    res.status(200).json({ wsToken });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -247,9 +273,21 @@ export const resetUserPassword = async (
   next: NextFunction,
 ) => {
   try {
-    const { email, newPassword } = req.body;
-    if (!email || !newPassword) {
-      return next(new ValidationError("Email and new password are required!"));
+    const { email, newPassword, resetToken } = req.body;
+    if (!email || !newPassword || !resetToken) {
+      return next(
+        new ValidationError("Email, reset token and new password are required!"),
+      );
+    }
+
+    //require proof that the OTP step actually succeeded for this email
+    const storedResetToken = await redis.get(`password_reset:${email}`);
+    if (!storedResetToken || storedResetToken !== resetToken) {
+      return next(
+        new ValidationError(
+          "Reset token is invalid or has expired. Please verify the OTP again.",
+        ),
+      );
     }
 
     const user = await prisma.users.findUnique({ where: { email } });
@@ -275,6 +313,8 @@ export const resetUserPassword = async (
       where: { email },
       data: { password: hashedPassword },
     });
+
+    await redis.del(`password_reset:${email}`);
 
     res.status(200).json({ message: "Password reset successfully!" });
   } catch (error) {
@@ -374,7 +414,6 @@ export const registerSeller = async (
       .json({ message: "OTP sent to email. Please verify your account" });
   } catch (error) {
     next(error);
-    console.log(req.body);
   }
 };
 
@@ -415,6 +454,20 @@ export const verifySeller = async (
       },
     });
 
+    //log the seller in immediately so the onboarding steps (create-shop, stripe connect) can be authenticated
+    const accessToken = jwt.sign(
+      { id: seller.id, role: "seller" },
+      process.env.ACCESS_TOKEN_SECRET as string,
+      { expiresIn: "15m" },
+    );
+    const refreshToken = jwt.sign(
+      { id: seller.id, role: "seller" },
+      process.env.REFRESH_TOKEN_SECRET as string,
+      { expiresIn: "7d" },
+    );
+    setCookie(res, "seller-refresh-token", refreshToken);
+    setCookie(res, "seller-access-token", accessToken);
+
     res.status(201).json({ seller, message: "Seller registered successfully" });
   } catch (error) {
     next(error);
@@ -424,13 +477,14 @@ export const verifySeller = async (
 // create a new shop
 
 export const createShop = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { name, bio, address, opening_hours, website, category, sellerId } =
+    const { name, bio, address, opening_hours, website, category } =
       req.body;
+    const sellerId = req.seller.id;
 
     if (
       !name ||
@@ -438,8 +492,7 @@ export const createShop = async (
       !address ||
       !opening_hours ||
       !website ||
-      !category ||
-      !sellerId
+      !category
     ) {
       return next(new ValidationError("All fields are required"));
     }
@@ -470,15 +523,12 @@ export const createShop = async (
 //create stripe connect account link
 
 export const createStripeConnectLink = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { sellerId } = req.body;
-    if (!sellerId) {
-      return next(new ValidationError("Seller id is required"));
-    }
+    const sellerId = req.seller.id;
 
     const seller = await prisma.sellers.findUnique({ where: { id: sellerId } });
 
@@ -511,15 +561,8 @@ export const createStripeConnectLink = async (
       type: "account_onboarding",
     });
     res.json({ url: accountLink.url });
-  } catch (error: any) {
-    console.error("STRIPE ERROR:", error);
-
-    res.status(500).json({
-      message: error.message,
-      type: error.type || "unknown",
-      code: error.code || null,
-      param: error.param || null,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
