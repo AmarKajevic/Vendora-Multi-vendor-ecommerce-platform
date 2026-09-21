@@ -47,7 +47,7 @@ export const trackOtpRequests = async (email:string, next:NextFunction) => {
 }
 
 export const sendOtp = async (name:string, email:string, template: string) => {
-    const otp = crypto.randomInt(1000, 9999).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     await sendEmail(email, "Verify your Email", template, {name, otp});
 
     // OTP valid for 5 minutes
@@ -119,10 +119,15 @@ export const verifyForgotPasswordOtp = async(req: Request, res:Response, next:Ne
     try {
         const{email, otp} = req.body;
         if(!email || !otp){
-            return new ValidationError("Email and OTP are required!");
+            throw new ValidationError("Email and OTP are required!");
         }
         await verifyOtp(email, otp, next);
-        res.status(200).json({message: "OTP verified. You can now reset your password"})
+
+        //issue a short-lived token proving this OTP was verified; resetUserPassword requires it
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        await redis.set(`password_reset:${email}`, resetToken, "EX", 600); // valid for 10 minutes
+
+        res.status(200).json({message: "OTP verified. You can now reset your password", resetToken})
     } catch (error) {
         return next(error)
     }

@@ -40,21 +40,17 @@ const page = () => {
 
                 setCartItems(cart)
                 setCoupon(coupon)
-                console.log(sellers[0])
-                const sellerStripeAccountId = sellers[0].stripeAccountId;
+
+                const sellerStripeAccountId = sellers[0]?.stripeAccountId;
                 if (!sellerStripeAccountId) {
-  setError("Seller Stripe account not configured.");
-  setLoading(false);
-  return;
-}
+                    setError("Seller Stripe account not configured.");
+                    setLoading(false);
+                    return;
+                }
 
                 const intentRes = await axiosInstance.post(
-                    "/order/api/create-payment-intent", 
-                    {
-                        amount: coupon?.discountAmount ? totalAmount - coupon?.discountAmount : totalAmount,
-                        sellerStripeAccountId,
-                        sessionId
-                    }
+                    "/order/api/create-payment-intent",
+                    { sessionId }
                 )
                 setClientSecret(intentRes.data.clientSecret);
 

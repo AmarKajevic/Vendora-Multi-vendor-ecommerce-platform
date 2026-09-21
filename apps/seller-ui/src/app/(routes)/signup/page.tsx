@@ -10,6 +10,7 @@ import axios,{AxiosError} from "axios";
 import { countries } from "apps/seller-ui/src/utils/countries";
 import CreateShop from "apps/seller-ui/src/shared/modules/auth/create-shop";
 import StripeIcon from "apps/seller-ui/src/assets/svgs/stripe-logo";
+import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
 type FormData = {
     name:string;
     email: string;
@@ -22,10 +23,9 @@ const SignUp = () => {
     const [showOtp, setShowOtp] = useState(false);
     const [canResend, setCanResend] = useState(true);
     const [timer,setTimer] = useState(60)
-    const [otp, setOtp] = useState(["","","",""]);
+    const [otp, setOtp] = useState(["","","","","",""]);
     const [sellerData, setSellerData] = useState<FormData | null>(null)
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-    const [sellerId, setSellerId] = useState("");
 
 
 
@@ -65,11 +65,10 @@ const SignUp = () => {
                 ...sellerData,
                 otp: otp.join(""),
 
-            })
+            }, { withCredentials: true })
             return response.data;
         },
-        onSuccess: (data) => {
-            setSellerId(data?.seller?.id);
+        onSuccess: () => {
             setActiveStep(2);
         }
     })
@@ -104,10 +103,7 @@ const SignUp = () => {
 
     const connectStripe = async () => {
   try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/create-stripe-link`,
-      { sellerId }
-    );
+    const response = await axiosInstance.post("/api/create-stripe-link");
     if (response.data.url) {
       window.location.href = response.data.url;
     }
@@ -317,7 +313,7 @@ const SignUp = () => {
                     </>
                 )}
                 {activeStep === 2 && <CreateShop
-                    sellerId={sellerId} setActiveStep={setActiveStep}
+                    setActiveStep={setActiveStep}
                 />}
                 {activeStep === 3 && (
                     <div className="text-center ">

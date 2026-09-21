@@ -19,7 +19,7 @@ const SignUp = () => {
     const [showOtp, setShowOtp] = useState(false);
     const [canResend, setCanResend] = useState(true);
     const [timer,setTimer] = useState(60)
-    const [otp, setOtp] = useState(["","","",""]);
+    const [otp, setOtp] = useState(["","","","","",""]);
     const [userData, setUserData] = useState<FormData | null>(null)
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 

@@ -31,10 +31,10 @@ app.get('/', (req, res) => {
   res.send({ message: 'Welcome to order-service!' });
 });
 
-app.use(errorMiddleware)
-
 //routes
 app.use("/api", router)
+
+app.use(errorMiddleware)
 
 
 

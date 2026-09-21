@@ -18,9 +18,6 @@ export const isUser = (req:any, res: Response, next: NextFunction) => {
 
 
 export const isAdmin = (req:any, res: Response, next:NextFunction) => {
-     console.log('🔍 isAdmin middleware pozvan, req.role =', req.role);
-
-     
     if(req.role !== "admin") {
         return next (new AuthError("Access denied: admin only "))
     }

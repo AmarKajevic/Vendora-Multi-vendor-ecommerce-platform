@@ -17,8 +17,9 @@ type FormData = {
 
 const Login = () => {
     const [step, setStep] = useState<"email" | "otp" | "reset">("email");
-    const [otp, setOtp] = useState(["","","",""])
+    const [otp, setOtp] = useState(["","","","","",""])
     const [userEmail, setUserEmail]= useState<string | null>(null);
+    const [resetToken, setResetToken] = useState<string | null>(null);
     const [canResend, setCanResend] = useState(true);
     const [timer, setTimer] = useState(60);
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -72,7 +73,8 @@ const Login = () => {
 
                  return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
+            setResetToken(data.resetToken);
             setStep("reset");
             setServerError(null);
         },
@@ -86,9 +88,9 @@ const Login = () => {
 
     const resetPasswordMutation = useMutation({
         mutationFn: async({password}: {password:string}) => {
-            if(!password) return;
+            if(!password || !resetToken) return;
             const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/reset-password-user`,
-                {email: userEmail, newPassword: password}
+                {email: userEmail, newPassword: password, resetToken}
             )
             return response.data;
 

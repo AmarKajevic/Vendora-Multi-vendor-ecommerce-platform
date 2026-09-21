@@ -18,12 +18,34 @@ export const createPaymentIntent = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const { amount, sellerStripeAccountId, sessionId } = req.body;
-
-  const customerAmount = Math.round(amount * 100);
-  const platformFee = Math.floor(customerAmount * 0.1);
-
   try {
+    const { sessionId } = req.body;
+    if (!sessionId) {
+      return next(new ValidationError("Session id is required"));
+    }
+
+    //load the server-computed session instead of trusting client-provided amount/destination
+    const sessionKey = `payment-session:${sessionId}`;
+    const sessionData = await redis.get(sessionKey);
+    if (!sessionData) {
+      return next(new ValidationError("Session not found or expired"));
+    }
+
+    const session = JSON.parse(sessionData);
+    if (session.userId !== req.user.id) {
+      return next(new ValidationError("This payment session does not belong to you"));
+    }
+
+    const { totalAmount, coupon, sellers } = session;
+    const sellerStripeAccountId = sellers?.[0]?.stripeAccountId;
+    if (!sellerStripeAccountId) {
+      return next(new ValidationError("Seller Stripe account is not configured"));
+    }
+
+    const finalAmount = coupon?.discountAmount ? totalAmount - coupon.discountAmount : totalAmount;
+    const customerAmount = Math.round(finalAmount * 100);
+    const platformFee = Math.floor(customerAmount * 0.1);
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: customerAmount,
       currency: "usd",
@@ -239,6 +261,17 @@ export const createOrder = async (
         return acc;
       }, {});
 
+      //fetch each shop's seller info once, up front
+      const sellerShops = await prisma.shops.findMany({
+        where: { id: { in: Object.keys(shopGrouped) } },
+        select: {
+          id: true,
+          sellerId: true,
+          name: true,
+        },
+      });
+      const shopById = new Map(sellerShops.map((shop) => [shop.id, shop]));
+
       for (const shopId in shopGrouped) {
         const orderItems = shopGrouped[shopId];
 
@@ -357,30 +390,21 @@ export const createOrder = async (
         )
         console.log("🟢 Email send completed (or failed silently)");
 
-        //create notifications for sellers
-        const createdShopIds = Object.keys(shopGrouped)
-        const sellerShops = await prisma.shops.findMany({
-            where: {id: {in: createdShopIds}},
-            select: {
-                id: true,
-                sellerId: true,
-                name: true
+        //create notification for this shop's seller
+        const shop = shopById.get(shopId);
+        if (shop) {
+          const firstProduct = orderItems[0];
+          const productTitle = firstProduct?.title || "new item";
+
+          await prisma.notifications.create({
+            data: {
+              title: "🛒 New order received",
+              message: `A customer just ordered ${productTitle} from your shop.`,
+              creatorId: userId,
+              receiverId: shop.sellerId,
+              redirect_link: `https://ecommerce.com/order/${sessionId}`
             }
-        })
-
-        for (const shop of sellerShops) {
-            const firstProduct = shopGrouped[shop.id][0];
-            const productTitle = firstProduct?.title || "new item";
-
-            await prisma.notifications.create ({
-                data: {
-                    title: "🛒 New order received",
-                    message: `A customer just ordered ${productTitle} from your shop.`,
-                    creatorId: userId,
-                    receiverId: shop.sellerId,
-                    redirect_link: `https://ecommerce.com/order/${sessionId}`
-                }
-            })
+          })
         }
         await prisma.notifications.create({
           data: {
@@ -391,8 +415,8 @@ export const createOrder = async (
             redirect_link: `/order/${order.id}`
           }
         })
-        await redis.del(sessionKey)
       }
+      await redis.del(sessionKey)
     }
     res.status(200).json({success: true, received: true})
   } catch (error) {
@@ -508,9 +532,9 @@ export const getOrderDetails = async (req:any, res:Response, next: NextFunction)
       couponCode: coupon
     }
   })
-    
+
   } catch (error) {
-    
+    next(error)
   }
 }
 
